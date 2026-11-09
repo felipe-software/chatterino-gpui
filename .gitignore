@@ -18,3 +18,4 @@ yarn-error.*
 .claude/
 *.md
 !README.md
+!docs/DEVELOPMENT.md
