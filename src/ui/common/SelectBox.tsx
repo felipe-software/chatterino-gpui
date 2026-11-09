@@ -1,5 +1,6 @@
 import { Svg, Text, View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { ICONS } from "../icons";
+import { Select } from "../modern/controls/Select";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 
@@ -17,6 +18,9 @@ export function SelectBox<T extends string | number>({ testID, value, options, w
     const { theme, fonts, openOverlay } = useApp();
     const colors = chromeColors(theme);
     const current = options.find((option) => option.value === value);
+    if (theme.modern) {
+        return <Select testID={testID} value={value} options={options} width={width} onChange={onChange} />;
+    }
     const open = (event: MouseResponderEvent) => {
         const left = event.nativeEvent.pageX - event.nativeEvent.locationX;
         const top = event.nativeEvent.pageY - event.nativeEvent.locationY + 24;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Platform, View } from "@felipe-software/react-native-gpui";
+import { ModernHighlightsPage } from "../modern/settingsPages/ModernHighlightsPage";
 import { useApp } from "../state/AppContext";
 import { HighlightBadgesTab } from "./HighlightBadgesTab";
 import { HighlightBlacklistTab } from "./HighlightBlacklistTab";
@@ -19,11 +20,12 @@ const DEFAULT_SOUND_TOOLTIP = "This sound will play for all highlight phrases th
 const FLASH_NOTE = "Not available in this app: the taskbar can only be flashed on macOS.";
 
 export function HighlightsPage() {
-    const { settings } = useApp();
+    const { settings, theme } = useApp();
     const { update } = useSettingsUpdate();
     const actions = useSettingsActions();
     const [tab, setTab] = useState(HIGHLIGHT_TABS[0]);
     const soundPath = settings.pathHighlightSound;
+    if (theme.modern) return <ModernHighlightsPage />;
     return (
         <View testID="settings-highlights" style={{ flex: 1, padding: 10, paddingRight: 9, gap: 6 }}>
             <TabWidget testID="highlights" tabs={HIGHLIGHT_TABS} selected={tab} onSelect={setTab}>

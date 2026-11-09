@@ -1,5 +1,7 @@
 import { View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { effectColor } from "../colors";
+import { MODERN_ICONS } from "../modern/icons";
+import { IconButton } from "../modern/controls/IconButton";
 import { useApp } from "../state/AppContext";
 import { HoverGlow } from "./HoverGlow";
 import { useButtonEffect } from "./useButtonEffect";
@@ -27,6 +29,25 @@ export function KebabButton({ color, hoverColor, testID, onOpen }: Props) {
         const bottom = event.nativeEvent.pageY - event.nativeEvent.locationY + HEIGHT;
         onOpen(right, bottom);
     };
+    if (theme.modern) {
+        return (
+            <IconButton
+                testID={testID}
+                icon={MODERN_ICONS.kebab}
+                label="More options"
+                width={WIDTH}
+                height={HEIGHT}
+                iconSize={18}
+                onPress={() => undefined}
+                onMouseDown={(event) => {
+                    if (event.nativeEvent.pressDrag) return;
+                    const right = event.nativeEvent.pageX - event.nativeEvent.locationX + WIDTH;
+                    const bottom = event.nativeEvent.pageY - event.nativeEvent.locationY + HEIGHT;
+                    onOpen(right, bottom);
+                }}
+            />
+        );
+    }
     return (
         <View
             testID={testID}

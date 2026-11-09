@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage } from "../../native/chatList";
 import { HOTKEYS } from "../hotkeys";
 import { messageMenuEntries, type MessageMenuActions } from "../splits/messageMenu";
 import type { MenuEntry } from "../state/overlays";

@@ -24,6 +24,7 @@ const child = spawn(service.path, [], {
         ...process.env,
         ...service.env,
         RNGPUI_BUNDLE: bundle,
+        RNGPUI_FONT_DIR: process.env.RNGPUI_FONT_DIR || join(appRoot, "assets", "fonts"),
         RNGPUI_APP_ID: process.env.RNGPUI_APP_ID || "com.chatterino.gpui",
         RNGPUI_APP_NAME: process.env.RNGPUI_APP_NAME || "Chatterino GPUI",
         RNGPUI_WINDOW_TITLE: process.env.RNGPUI_WINDOW_TITLE || "Chatterino (react-native-gpui)",

@@ -1,4 +1,4 @@
-import type { ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage } from "../../native/chatList";
 import type { Channel, ChannelEvent, ChannelInfo, ChannelModes, Completion, EmoteInfo, SendResult, Settings } from "../api";
 import type { BadgeMap } from "../badges/twitch";
 import type { UserBadgeMap } from "../badges/thirdparty";

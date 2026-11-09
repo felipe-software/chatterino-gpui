@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage } from "../native/chatList";
 import type { AccountsState, Channel, SendResult } from "./api";
 import { createReplySender, prepareReplyText, replyLine } from "./replies";
 import { createStore } from "./store";

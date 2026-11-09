@@ -27,7 +27,7 @@ Settings, accounts and the tab layout are saved in
 
 | Variable | Effect |
 | --- | --- |
-| `RNGPUI_SERVICE` | run this `rngpui-service`, for example `rust/target/release/rngpui-service` from a library checkout |
+| `RNGPUI_SERVICE` | run this service binary instead of `native/target/release/chatterino-gpui-service` |
 | `RNGPUI_APP_ID` | app id, which also names the data and cache folders (default `com.chatterino.gpui`) |
 | `RNGPUI_STORAGE_DIR`, `RNGPUI_CACHE_DIR` | keep `localStorage` or the HTTP cache in another folder, for a throwaway profile |
 | `CHATTERINO_TIMING=1` | logs `[chatterino-timing] {event, t}` lines: join, ivr lookup, `ROOMSTATE`, each emote set and its source, history fetched / prepended / rebuilt |
@@ -39,10 +39,12 @@ The library's own variables are listed in
 
 ## Inspect and drive it
 
-The library's `rngpui` CLI launches the bundle offscreen, captures it and drives it:
+The library's `rngpui` CLI launches the bundle offscreen, captures it and drives it. Point it at
+this app's service binary, which has the chat list:
 
 ```sh
 bun run bundle
+export RNGPUI_SERVICE=native/target/release/chatterino-gpui-service
 bun run rngpui shot --bundle .build/chatterino.js --size 1280x800 --keep   # prints a session dir
 bun run rngpui do tap settings-button --session <dir>
 bun run rngpui reshot --session <dir>
@@ -52,6 +54,101 @@ bun run rngpui close --session <dir>
 Real keystrokes, clicks and drags go through the control socket (`realKey`, `realtap`, `realdown`,
 `realmove`, `realup`, `realcontext`, `realscroll`). `globalThis.__chatterinoDebug()` returns the
 app services (core, layout actions, overlays, hit areas) for `evalJs` probes.
+
+## Native chat list
+
+The chat log is one native element drawn by this app's own service binary: the Rust code is
+in `native/src/chat_list/` (`model` parsing, `layout` per-message layout, `state`
+buffer/scroll/selection, `element` the GPUI element, `images` loading and animation clock,
+`events`, `debug` dump and tap), registered through react-native-gpui's `NativeElement`
+extension point in `native/src/main.rs`. `native/` is a Cargo workspace that depends on the
+library crate in `../react-native-gpui/rust` and repeats its `[patch.crates-io]` entries. The
+React side is `src/native/chatList/`: `ChatList.tsx` (the component and its handle),
+`chatListHost.ts` (the host declared with `defineNativeComponent`) and `types.ts`.
+`bun run build:native` builds `native/target/release/chatterino-gpui-service` and stages the
+library's `ui-runtime.js` beside it; `bun run start` and the scripts launch it.
+
+Messages never travel as props: the ref's methods stream them into the native element, so
+an append costs only the new messages. The element keeps up to `maxMessages` (default 1000,
+oldest dropped), lays out and paints only visible rows, and caches each message's layout
+until its width, font, scale or content changes.
+
+- Message flags: `disabled` and `historical` fade a message, `hidden` takes it out of the
+  layout until a patch sets it back, `background` fills the row, `marker` colors its
+  scrollbar tick. A badge's `background` paints behind its image (FFZ's custom moderator
+  badge).
+- Handle: `append`, `prepend` (history, oldest first), `update` (patches by `id`; pass `""`
+  to clear a string or color field), `clear`, `scrollToBottom`, `scrollToTop`,
+  `scrollToMessage(id, { align: "top" | "center" | "bottom" })` (default center), `pageUp`,
+  `pageDown` (one viewport).
+- Elements are separated by one space; whitespace inside a text element separates words.
+  `trailingSpace: false` glues the next element to it (`@alice` + `,`).
+- Layout follows Chatterino: 8/4 px margins, elements bottom-aligned per line, emotes count
+  as 4 px shorter than they are (they overhang 2 px above and below), badges are not scaled
+  by `emoteScale`, zero-width emotes are centered over the previous emote, and a `reply`
+  renders as one truncated line at 0.8x size with a curve.
+- Scrolling: wheel/trackpad and a thin scrollbar that widens on hover and shows `marker`
+  colors. At the bottom the list follows new messages; scrolled up, appends, prepends and
+  trimming keep the rows you are reading in place, and `onScrollState` reports
+  `{ atBottom, paused, unseen }`. `pauseOnHover` freezes the view while the pointer is over
+  the list.
+- Interaction: `onHover` fires with the user, link, emote or badge under the pointer, its
+  window-space bounds and the pointer position, or `null` when it leaves. `onPress` fires for
+  user/link/emote/badge, or `message` for anything else, with the button, pointer position
+  and modifier keys. Left clicks fire on release unless the pointer moved more than 15 px;
+  right and middle clicks fire on press.
+- Selection: drag selects across messages, double-click a word, triple-click the message
+  body. Ctrl+C copies it, including while a `TextInput` is focused, unless that input holds a
+  newer selection of its own. Emotes copy as their names, badges copy nothing.
+
+Implementation notes:
+
+- **Scroll position is a message anchor, not a pixel offset**: `(seq, px into that message)`.
+  Appends get increasing seqs and prepends decreasing ones, so the deque stays contiguous and
+  `index = seq - front.seq`. That is why append, prepend and trimming do not move a
+  scrolled-up view, and why the scrollbar counts messages (Chatterino's thumb math:
+  `y = rel/n·(h−11)+1`, `height = page/n·(h−11)+10`).
+- **Commands and events** go through the library's generic wire: `nativeCommand` with
+  `type: "chatlist"` (parsed on the tree-parser thread, applied on the main thread, which arms
+  a paint-only frame), and events `chatListPress`, `chatListHover`, `chatListScroll`. Options
+  are paint-only for the retained-layout gate.
+- **Paint inside `window.paint_layer`.** GPUI inserts every primitive painted outside a layer
+  into the scene's BoundsTree. Three layers per list (content, zero-width overlays, selection
+  and scrollbar) cut paint from 3.3 ms to about 1 ms per frame for ~7k glyphs. Inside one layer
+  sprites sort by atlas tile id, not insertion order, which is why zero-width emotes get their
+  own layer.
+- **Never call `pointer_reaches` during prepaint.** Spans painted later are not registered
+  yet and its per-position memo caches the wrong answer for the rest of the frame. The list
+  records `pointer_inside` from its mouse handlers and reads that in prepaint.
+- **Animation**: images load with `cx.fetch_asset::<ImgResourceLoader>` (shared with
+  `<Image>` and `ImageCache.prefetch`), and a load completion arms a paint-only refresh. Frame
+  index comes from one global epoch (all copies in sync, delays of 10 ms or less play as
+  100 ms, minimum 20 ms). Only painted emotes compute a deadline and one timer serves the
+  earliest, so a visible 200 ms GIF repaints at 5 fps and a list with no visible animation
+  never repaints.
+- **Copy is routed at the root frame**, not by focusing the list: the library asks every
+  native element for its selection (`selected_text`, `selection_changed_at`), so the chat
+  selection wins unless the focused `TextInput` holds a newer one.
+- **Debugging**: `rngpui get tree` shows one synthetic node per visible message
+  (`chatlist-message`, `nativeID` = message id) with children
+  `chatlist-user|text|link|emote|badge|timestamp|reply-curve`; the `chatlist` node carries a
+  `nativeState` summary (counts, scroll state, selection, image and wake counters). `do tap`
+  runs the list's own hit test, so it agrees with `realtap`. The debug socket answers
+  `chatListState` (`images: true` adds the visible images and their state, `timings: true` each
+  image's requested, settled and first-painted time).
+
+Gates, all with the app binary (`bun run build:native` first):
+
+```sh
+bun run conformance:chat-list          # wrapping, emotes, pixels, GIF cadence, events, selection, copy, anchoring, scrollbar
+bun run conformance:chat-list-window   # a ChatList in a second <Window>: commands, hover, press, close drops its state
+bun run perf:chat-list                 # 6 lists x 1000 messages at 20 messages/s: main-thread CPU and frames/s
+cd native && cargo test                # parsing, words, selection and anchoring unit tests
+```
+
+`perf:chat-list` takes `--seconds`, `--warmup`, `--max-main-cpu` and `--json`, and the fixture
+reads `CHAT_STRESS_LISTS`, `CHAT_STRESS_PREFILL`, `CHAT_STRESS_RATE`,
+`CHAT_STRESS_ANIMATED_EVERY` and `CHAT_STRESS_ANIMATE=0`. Fixtures are in `scripts/fixtures/`.
 
 ## Comparison with Chatterino
 
@@ -190,9 +287,11 @@ only after `ROOMSTATE`.
 | --- | --- |
 | `src/main.tsx` | Entry point: renders `App` in a 1280 x 800 window |
 | `src/data/` | Chat core: IRC, history, emotes, badges, highlights, filters, commands, accounts, settings and layout persistence, with tests |
+| `src/native/chatList/` | The `ChatList` component, its native host declaration and message types |
+| `native/` | Rust workspace for this app's service binary: the native chat list registered on react-native-gpui |
 | `src/ui/` | The React UI, see below |
 | `assets/` | Chatterino 2.5.5 settings icons, button images, sounds, avatars and contributor list |
-| `scripts/` | `run.mjs` (bundle and launch), `gpui.mjs` (finds the library's bundler and binary), `use-local-gpui.mjs`, `emote-timing.mjs` and `irc-quiet-proxy.mjs`, `gen-data.mjs` (regenerates the emoji and TLD tables), `smoke-data.mjs` (joins live channels and prints what the data layer built) |
+| `scripts/` | `run.mjs` (bundle and launch), `gpui.mjs` (finds the library's bundler and this app's binary), `build-native.mjs`, the chat-list conformance and stress scripts with their `fixtures/`, `use-local-gpui.mjs`, `emote-timing.mjs` and `irc-quiet-proxy.mjs`, `gen-data.mjs` (regenerates the emoji and TLD tables), `smoke-data.mjs` (joins live channels and prints what the data layer built) |
 | `docs/` | The side-by-side setup files in `compare/` and the README screenshots |
 
 | `src/ui` folder | Contents |

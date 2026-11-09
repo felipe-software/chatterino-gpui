@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TextInput, View } from "@felipe-software/react-native-gpui";
+import { TextField } from "../modern/controls/TextField";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { chromeColors } from "../theme";
@@ -26,6 +27,27 @@ export function SLineEdit({ testID, value, placeholder, width, grow, secure, dis
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const [focused, setFocused] = useState(false);
+
+    if (theme.modern) {
+        return (
+            <TextField
+                testID={testID}
+                size="md"
+                value={value}
+                placeholder={placeholder}
+                width={width}
+                grow={grow}
+                secure={secure}
+                disabled={disabled}
+                autoFocus={autoFocus}
+                align={align}
+                onChange={onChange}
+                onSubmit={onSubmit}
+                onBlur={onBlur}
+            />
+        );
+    }
+
     const border = focused ? colors.focusBorder : colors.fieldBorder;
     return (
         <View

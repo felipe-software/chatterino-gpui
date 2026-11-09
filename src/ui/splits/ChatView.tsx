@@ -1,16 +1,14 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { NativeClipboard, View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import {
     ChatList,
-    NativeClipboard,
-    View,
     type ChatListHandle,
     type ChatListHoverEvent,
     type ChatListMessage,
     type ChatListMessagePatch,
     type ChatListPressEvent,
     type ChatListScrollState,
-    type MouseResponderEvent,
-} from "@felipe-software/react-native-gpui";
+} from "../../native/chatList";
 import type { Channel } from "../../data/api";
 import { threadRootId } from "../../data/threads";
 import { useApp, type AppServices } from "../state/AppContext";
@@ -19,6 +17,8 @@ import { inputRegistry } from "../state/inputs";
 import { isSpecialChannel } from "../state/specialChannels";
 import { useModRights } from "../state/useChannelRights";
 import { useStore } from "../state/useStore";
+import { JumpPill } from "../modern/splits/JumpPill";
+import { useMessageRecolor } from "../modern/splits/useMessageRecolor";
 import { MoreMessagesButton } from "./MoreMessagesButton";
 import { PausedIndicator } from "./PausedIndicator";
 import { ZoomWheel } from "./ZoomWheel";
@@ -89,6 +89,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
     const canReply = !isSpecialChannel(channelName) && !!source;
     const showReplyButton = !!settings.showReplyButton && canReply;
     const hasModRights = useModRights(isSpecialChannel(channelName) ? undefined : source, accounts.current);
+    const recolor = useMessageRecolor(theme.modern, settings);
 
     useImperativeHandle(ref, () => ({ scrollToBottom: () => list.current?.scrollToBottom() }), []);
 
@@ -97,9 +98,16 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
         if (!handle) return;
         handle.clear();
         if (!channel) return;
-        const decorate = (messages: ChatListMessage[]) => (showReplyButton ? messages.map(withReplyButton) : messages);
-        const decoratePatches = (patches: ChatListMessagePatch[]) =>
-            showReplyButton ? patches.map((patch) => (patch.elements ? (withReplyButton(patch as ChatListMessage) as ChatListMessagePatch) : patch)) : patches;
+        const decorate = (messages: ChatListMessage[]) => {
+            const recolored = recolor ? messages.map(recolor.message) : messages;
+            return showReplyButton ? recolored.map(withReplyButton) : recolored;
+        };
+        const decoratePatches = (patches: ChatListMessagePatch[]) => {
+            const recolored = recolor ? patches.map(recolor.patch) : patches;
+            return showReplyButton
+                ? recolored.map((patch) => (patch.elements ? (withReplyButton(patch as ChatListMessage) as ChatListMessagePatch) : patch))
+                : recolored;
+        };
         handle.append(decorate(channel.snapshot()));
         const markActivity = (messages: ChatListMessage[]) => {
             const current = latest.current;
@@ -127,7 +135,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
                     return;
             }
         });
-    }, [channel, tabId, showReplyButton]);
+    }, [channel, tabId, showReplyButton, recolor]);
 
     const findMessage = (id: string) => channel?.snapshot().find((message) => message.id === id);
 
@@ -285,6 +293,8 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
         modifiers.current = { ...modifiersOf(event), at: Date.now(), fromContextMenu };
     };
 
+    const modernPillShown = !!theme.modern && (scroll.paused || !scroll.atBottom);
+
     return (
         <View
             style={{ flex: 1 }}
@@ -313,15 +323,20 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
                     onZoom={(direction) => core.settings.set((current) => ({ ...current, uiScale: zoomedScale(uiScaleOf(current), direction) }))}
                 />
             ) : null}
-            {scroll.paused ? <PausedIndicator /> : null}
-            {scroll.atBottom ? null : (
-                <MoreMessagesButton
-                    testID={`more-messages-${splitId}`}
-                    theme={theme}
-                    fonts={fonts}
-                    onPress={() => setTimeout(() => list.current?.scrollToBottom(), 180)}
-                />
+            {theme.modern ? null : (
+                <>
+                    {scroll.paused ? <PausedIndicator /> : null}
+                    {scroll.atBottom ? null : (
+                        <MoreMessagesButton
+                            testID={`more-messages-${splitId}`}
+                            theme={theme}
+                            fonts={fonts}
+                            onPress={() => setTimeout(() => list.current?.scrollToBottom(), 180)}
+                        />
+                    )}
+                </>
             )}
+            {modernPillShown ? <JumpPill testID={`more-messages-${splitId}`} scroll={scroll} onPress={() => list.current?.scrollToBottom()} /> : null}
         </View>
     );
 });

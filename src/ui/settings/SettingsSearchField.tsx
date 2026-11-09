@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Image, TextInput, View, type TextInputHandle } from "@felipe-software/react-native-gpui";
+import { Image, Platform, TextInput, View, type TextInputHandle } from "@felipe-software/react-native-gpui";
 import { assetPath } from "../../data/assets";
+import { CONTROL_ICONS } from "../modern/controls/icons";
+import { Kbd } from "../modern/controls/Kbd";
+import { TextField } from "../modern/controls/TextField";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { chromeColors } from "../theme";
@@ -11,6 +14,8 @@ type Props = { value: string; onChange: (value: string) => void };
 export const SETTINGS_SEARCH_KEY = "settings-search";
 
 const PLACEHOLDER = "#7f7f7f";
+const FIND_SHORTCUT = Platform.OS === "macos" ? "⌘ F" : "Ctrl F";
+const MODERN_HEIGHT = 34;
 
 export function SettingsSearchField({ value, onChange }: Props) {
     const { theme, fonts } = useApp();
@@ -30,6 +35,22 @@ export function SettingsSearchField({ value, onChange }: Props) {
             }),
         [],
     );
+
+    if (theme.modern) {
+        return (
+            <TextField
+                ref={input}
+                testID="settings-search"
+                appearance="search"
+                height={MODERN_HEIGHT}
+                leadingIcon={CONTROL_ICONS.search}
+                value={value}
+                placeholder="Find a setting"
+                trailing={<Kbd label={FIND_SHORTCUT} size="sm" />}
+                onChange={onChange}
+            />
+        );
+    }
 
     return (
         <View

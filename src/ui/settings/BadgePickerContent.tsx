@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Text, View } from "@felipe-software/react-native-gpui";
+import { ModernBadgePicker } from "../modern/settingsPages/ModernBadgePicker";
 import { useApp } from "../state/AppContext";
 import { AVAILABLE_BADGES } from "./highlightRows";
 import { SETTINGS_FONT_SIZE, SETTINGS_STYLE } from "./settingsStyle";
@@ -10,8 +11,9 @@ type Badge = (typeof AVAILABLE_BADGES)[number];
 type Props = { onPick: (badge: Badge) => void; onCancel: () => void };
 
 export function BadgePickerContent({ onPick, onCancel }: Props) {
-    const { fonts } = useApp();
+    const { fonts, theme } = useApp();
     const [selected, setSelected] = useState<Badge>(AVAILABLE_BADGES[0]);
+    if (theme.modern) return <ModernBadgePicker onPick={onPick} onCancel={onCancel} />;
     const label = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE };
     return (
         <View style={{ flex: 1, padding: 10, gap: 8 }}>

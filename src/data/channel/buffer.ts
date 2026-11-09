@@ -1,4 +1,4 @@
-import type { ChatListMessage, ChatListMessagePatch } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage, ChatListMessagePatch } from "../../native/chatList";
 import type { ChannelEvent, ChannelInfo } from "../api";
 import type { ChatMessage } from "../messages/model";
 import type { MessageSink } from "../messages/sink";

@@ -36,7 +36,7 @@ Times how long emotes take to appear after launch, cold (empty caches) and warm
   --seconds 20               how long each run lasts
   --repeat 1                 runs per (app, channel, state); the app order flips every round
   --work <dir>               profiles and captures (default $TMPDIR/chatterino-emote-timing)
-  --service <path>           rngpui-service (default RNGPUI_SERVICE, else the installed library's)
+  --service <path>           service binary (default RNGPUI_SERVICE, else native/target/release/chatterino-gpui-service)
   --no-bundle                reuse .build/chatterino.js instead of bundling first
   --bundle <file>            run this bundle (implies --no-bundle)
   --display :98              private X display for Chatterino (started if missing)

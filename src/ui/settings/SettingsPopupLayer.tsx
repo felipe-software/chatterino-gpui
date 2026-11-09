@@ -1,4 +1,6 @@
 import { ScrollView, Text, View } from "@felipe-software/react-native-gpui";
+import { DIALOG_HEADER_HEIGHT, DialogHeader } from "../modern/controls/DialogHeader";
+import { Tooltip } from "../overlays/Tooltip";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 import type { Point, PopupSpec } from "./SettingsContext";
@@ -16,10 +18,13 @@ const LIST_ROW = 24;
 const LIST_MAX_HEIGHT = 320;
 const POPUP_BORDER = "#66bcff";
 const TITLE_HEIGHT = 28;
+const TOOLTIP_CURSOR_OFFSET = 16;
+const SCRIM = "rgba(0, 0, 0, 0.35)";
 
 export function SettingsPopupLayer({ width, height, popup, tooltip, onClose }: Props) {
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
+    const tokens = theme.modern;
     const text = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE };
 
     const renderList = (spec: Extract<PopupSpec, { kind: "list" }>) => {
@@ -58,7 +63,34 @@ export function SettingsPopupLayer({ width, height, popup, tooltip, onClose }: P
         );
     };
 
+    const renderModernModal = (spec: Extract<PopupSpec, { kind: "modal" }>) => {
+        const modalWidth = Math.min(spec.width, width - 20);
+        const modalHeight = Math.min(spec.height + DIALOG_HEADER_HEIGHT, height - 20);
+        return (
+            <View
+                testID="settings-modal"
+                style={{
+                    position: "absolute",
+                    left: Math.round((width - modalWidth) / 2),
+                    top: Math.round((height - modalHeight) / 2),
+                    width: modalWidth,
+                    height: modalHeight,
+                    overflow: "hidden",
+                    backgroundColor: tokens?.bgRaised,
+                    borderWidth: 1,
+                    borderColor: tokens?.lineStrong,
+                    borderRadius: 12,
+                    boxShadow: tokens?.shadow,
+                }}
+            >
+                <DialogHeader title={spec.title} closeTestID="settings-modal-close" showClose onClose={onClose} />
+                <View style={{ flex: 1 }}>{spec.render(onClose)}</View>
+            </View>
+        );
+    };
+
     const renderModal = (spec: Extract<PopupSpec, { kind: "modal" }>) => {
+        if (tokens) return renderModernModal(spec);
         const modalWidth = Math.min(spec.width, width - 20);
         const modalHeight = Math.min(spec.height + TITLE_HEIGHT, height - 20);
         return (
@@ -89,36 +121,46 @@ export function SettingsPopupLayer({ width, height, popup, tooltip, onClose }: P
         );
     };
 
+    const renderTooltip = (spec: { text: string; at: Point }) => {
+        if (tokens) {
+            const cursor = { x: spec.at.x - TOOLTIP_CURSOR_OFFSET, y: spec.at.y - TOOLTIP_CURSOR_OFFSET };
+            return <Tooltip spec={{ owner: "settings", text: spec.text, anchor: { ...cursor, width: 0, height: 0 }, cursor, placement: "cursor" }} />;
+        }
+        return (
+            <View
+                testID="settings-tooltip"
+                pointerEvents="none"
+                style={{
+                    position: "absolute",
+                    left: Math.min(spec.at.x, width - 380),
+                    top: Math.min(spec.at.y, height - 60),
+                    maxWidth: 420,
+                    padding: 2,
+                    paddingHorizontal: 4,
+                    backgroundColor: SETTINGS_STYLE.tooltipBackground,
+                    borderWidth: 1,
+                    borderColor: SETTINGS_STYLE.tooltipBorder,
+                }}
+            >
+                <Text style={{ ...text, fontSize: SETTINGS_FONT_SIZE - 1 }}>{spec.text}</Text>
+            </View>
+        );
+    };
+
+    const scrim = popup?.kind === "modal" ? SCRIM : undefined;
+    const backdropCloses = popup?.kind === "list";
     return (
         <>
             {popup ? (
                 <View
                     testID="settings-popup-backdrop"
-                    style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: popup.kind === "modal" ? "rgba(0, 0, 0, 0.35)" : undefined }}
-                    onMouseDown={popup.kind === "list" ? onClose : undefined}
+                    style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: scrim }}
+                    onMouseDown={backdropCloses ? onClose : undefined}
                 />
             ) : null}
             {popup?.kind === "list" ? renderList(popup) : null}
             {popup?.kind === "modal" ? renderModal(popup) : null}
-            {tooltip ? (
-                <View
-                    testID="settings-tooltip"
-                    pointerEvents="none"
-                    style={{
-                        position: "absolute",
-                        left: Math.min(tooltip.at.x, width - 380),
-                        top: Math.min(tooltip.at.y, height - 60),
-                        maxWidth: 420,
-                        padding: 2,
-                        paddingHorizontal: 4,
-                        backgroundColor: SETTINGS_STYLE.tooltipBackground,
-                        borderWidth: 1,
-                        borderColor: SETTINGS_STYLE.tooltipBorder,
-                    }}
-                >
-                    <Text style={{ ...text, fontSize: SETTINGS_FONT_SIZE - 1 }}>{tooltip.text}</Text>
-                </View>
-            ) : null}
+            {tooltip ? renderTooltip(tooltip) : null}
         </>
     );
 }

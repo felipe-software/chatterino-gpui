@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, useWindowDimensions } from "@felipe-software/react-native-gpui";
 import { TextField } from "../common/TextField";
+import { FadeIn } from "../modern/controls/FadeIn";
+import { CONTROL_ICONS } from "../modern/controls/icons";
+import { TextField as ModernTextField } from "../modern/controls/TextField";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { isSpecialChannel } from "../state/specialChannels";
@@ -15,6 +18,8 @@ const MIN_HEIGHT = 300;
 const PADDING = 11;
 const FIELD_KEY = "field:quick-switcher";
 const OUTLINE = "#999999";
+const MODERN_TOP_RATIO = 0.18;
+const MODERN_MIN_TOP = 48;
 
 export function QuickSwitcher({ onClose }: Props) {
     const services = useApp();
@@ -71,6 +76,54 @@ export function QuickSwitcher({ onClose }: Props) {
     const height = Math.max(MIN_HEIGHT, PADDING * 2 + 24 + 6 + items.length * 32);
     const left = Math.round((screen.width - WIDTH) / 2);
     const top = Math.round((screen.height - height) / 2);
+    const tokens = theme.modern;
+    const changeText = (value: string) => {
+        setText(value);
+        setTyped(true);
+        setSelected(0);
+    };
+
+    if (tokens) {
+        const modernTop = Math.max(MODERN_MIN_TOP, Math.round(screen.height * MODERN_TOP_RATIO));
+        return (
+            <View style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+                <View testID="quick-switcher-backdrop" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }} onMouseDown={onClose} />
+                <FadeIn
+                    testID="quick-switcher-panel"
+                    style={{
+                        position: "absolute",
+                        left,
+                        top: modernTop,
+                        width: WIDTH,
+                        gap: 6,
+                        padding: 8,
+                        backgroundColor: tokens.bgRaised,
+                        borderWidth: 1,
+                        borderColor: tokens.lineStrong,
+                        borderRadius: 12,
+                        boxShadow: tokens.shadow,
+                    }}
+                >
+                    <ModernTextField
+                        testID="quick-switcher"
+                        value={text}
+                        placeholder="Jump to a channel or open a new one"
+                        leadingIcon={CONTROL_ICONS.search}
+                        autoFocus
+                        onChange={changeText}
+                        onSubmit={() => activate(items[current])}
+                    />
+                    {items.length > 0 ? (
+                        <View style={{ gap: 2 }}>
+                            {items.map((item, index) => (
+                                <SwitcherRow key={item.key} item={item} selected={index === current} onHover={() => setSelected(index)} onPress={() => activate(item)} />
+                            ))}
+                        </View>
+                    ) : null}
+                </FadeIn>
+            </View>
+        );
+    }
 
     return (
         <View style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
@@ -95,11 +148,7 @@ export function QuickSwitcher({ onClose }: Props) {
                     value={text}
                     placeholder="Jump to a channel or open a new one"
                     autoFocus
-                    onChange={(value) => {
-                        setText(value);
-                        setTyped(true);
-                        setSelected(0);
-                    }}
+                    onChange={changeText}
                     onSubmit={() => activate(items[current])}
                 />
                 <View>

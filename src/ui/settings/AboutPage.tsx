@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Image, Platform, Renderer, ScrollView, Text, View } from "@felipe-software/react-native-gpui";
+import { Image, Platform, Renderer, ScrollView, Text, View, type RendererProvenance } from "@felipe-software/react-native-gpui";
 import { assetPath } from "../../data/assets";
 import chatterinoLicense from "../../../assets/CHATTERINO-LICENSE.txt";
+import { ModernAboutPage } from "../modern/settingsPages/ModernAboutPage";
 import { useApp } from "../state/AppContext";
 import { CONTRIBUTORS } from "./contributors";
 import { GroupBox } from "./GroupBox";
@@ -42,15 +43,26 @@ const ATTRIBUTIONS: Array<{ text: string; links: Array<{ label: string; url: str
     },
 ];
 
+const MODERN_ATTRIBUTIONS = [
+    { what: "Twemoji emoji", who: "Twitter", url: "https://github.com/twitter/twemoji" },
+    { what: "Facebook emoji", who: "Facebook", url: "https://facebook.com" },
+    { what: "Apple emoji", who: "Apple", url: "https://apple.com" },
+    { what: "Google emoji", who: "Google", url: "https://google.com" },
+    { what: "Emoji data", who: "Cal Henderson", url: "https://www.iamcal.com/" },
+    { what: "Emoji data license", who: "MIT", url: "https://github.com/iamcal/emoji-data/blob/master/LICENSE" },
+    { what: "Settings icons, button images, sounds, avatars and the logo", who: "Chatterino 2.5.5", url: "https://github.com/Chatterino/chatterino2/tree/v2.5.5" },
+];
+
 type Provenance = { build: string; running: string };
 
 export function AboutPage() {
-    const { fonts, openUrl } = useApp();
+    const { fonts, openUrl, theme } = useApp();
     const ui = useSettingsUi();
     const [provenance, setProvenance] = useState<Provenance>({
         build: "Chatterino 2.5.5 (example)",
         running: `Running on ${Platform.OS}`,
     });
+    const [renderer, setRenderer] = useState<RendererProvenance | null>(null);
     const text = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE };
 
     useEffect(() => {
@@ -58,6 +70,7 @@ export function AboutPage() {
         Renderer.getProvenance().then(
             (info) => {
                 if (cancelled) return;
+                setRenderer(info);
                 const revision = info.gpuiRevision.slice(0, SHORT_REVISION);
                 const engine = info.jsEngineVersion === "system" ? `system ${info.jsEngine}` : `${info.jsEngine} ${info.jsEngineVersion}`;
                 setProvenance({
@@ -71,6 +84,18 @@ export function AboutPage() {
             cancelled = true;
         };
     }, []);
+
+    if (theme.modern) {
+        return (
+            <ModernAboutPage
+                provenance={renderer}
+                versionText={`${provenance.build}\n${provenance.running}`}
+                projects={LICENSES}
+                attributions={MODERN_ATTRIBUTIONS}
+                people={CONTRIBUTORS}
+            />
+        );
+    }
 
     const showLicense = (name: string, license: string) =>
         ui.openPopup({

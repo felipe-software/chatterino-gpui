@@ -15,6 +15,19 @@ import { SplitView } from "./SplitView";
 
 type Props = { tab: TabLayout; selected: boolean; page: Rect; manyTabs: boolean };
 
+const FRAME_INSET_START = 3;
+const FRAME_INSET_END = 2;
+
+function pageArea(page: Rect, framed: boolean): Rect {
+    if (!framed) return { x: 0, y: 0, width: page.width, height: page.height };
+    const inset = FRAME_INSET_START + FRAME_INSET_END;
+    return { x: FRAME_INSET_START, y: FRAME_INSET_START, width: page.width - inset, height: page.height - inset };
+}
+
+function modernSplitRect(rect: Rect, framed: boolean): Rect {
+    if (!framed) return rect;
+    return { x: rect.x + 1, y: rect.y + 1, width: rect.width - 3, height: rect.height - 3 };
+}
 
 export function TabPage({ tab, selected, page, manyTabs }: Props) {
     const services = useApp();
@@ -30,8 +43,11 @@ export function TabPage({ tab, selected, page, manyTabs }: Props) {
     const ctrlAltHeld = selected && !dragging && modifiers.ctrl && modifiers.alt;
     const addSpacing = (dragging && selected) || ctrlAltHeld;
 
+    const leaves = splitLeaves(tab.root);
+    const modern = !!theme.modern;
+    const framed = modern && leaves.length > 1;
     const root = useMemo(() => (draggedId ? removeNode(tab.root, draggedId).root : tab.root), [tab.root, draggedId]);
-    const area = useMemo(() => ({ x: 0, y: 0, width: page.width, height: page.height }), [page.width, page.height]);
+    const area = useMemo(() => pageArea(page, framed), [page.width, page.height, framed]);
     const grid = useMemo(() => layoutGrid(root, area, { addSpacing }), [root, area, addSpacing]);
     const fullGrid = useMemo(() => (draggedId ? layoutGrid(tab.root, area) : grid), [draggedId, tab.root, area, grid]);
 
@@ -39,9 +55,12 @@ export function TabPage({ tab, selected, page, manyTabs }: Props) {
         if (selected) hitAreas.setZones(tab.id, grid.zones);
     }, [selected, tab.id, grid.zones]);
 
-    const leaves = splitLeaves(tab.root);
     const topRight = topRightSplitId(root);
-    const rectOf = (id: string) => grid.splits.find((split) => split.id === id)?.rect ?? fullGrid.splits.find((split) => split.id === id)?.rect;
+    const gridRectOf = (id: string) => grid.splits.find((split) => split.id === id)?.rect ?? fullGrid.splits.find((split) => split.id === id)?.rect;
+    const rectOf = (id: string) => {
+        const rect = gridRectOf(id);
+        return rect && modern ? modernSplitRect(rect, framed) : rect;
+    };
     const isGhostPage = !selected && !!draggedId;
     const isHidden = !selected && !draggedId;
     const strips = ctrlAltHeld ? grid.zones.filter((zone) => zone.kind === "strip") : [];
@@ -71,20 +90,22 @@ export function TabPage({ tab, selected, page, manyTabs }: Props) {
             onMouseMove={selected ? trackModifiers : undefined}
             onMouseLeave={() => setModifiers(NO_MODIFIERS)}
         >
-            {grid.splits.map((split) => (
-                <View
-                    key={`border-${split.id}`}
-                    style={{
-                        position: "absolute",
-                        left: split.rect.x - 1,
-                        top: split.rect.y - 1,
-                        width: split.rect.width + 2,
-                        height: split.rect.height + 2,
-                        borderWidth: 1,
-                        borderColor: theme.tabs.dividerLine,
-                    }}
-                />
-            ))}
+            {modern
+                ? null
+                : grid.splits.map((split) => (
+                      <View
+                          key={`border-${split.id}`}
+                          style={{
+                              position: "absolute",
+                              left: split.rect.x - 1,
+                              top: split.rect.y - 1,
+                              width: split.rect.width + 2,
+                              height: split.rect.height + 2,
+                              borderWidth: 1,
+                              borderColor: theme.tabs.dividerLine,
+                          }}
+                      />
+                  ))}
             {tab.root ? null : (
                 <EmptyPage testID={`empty-${tab.id}`} theme={theme} fonts={fonts} manyTabs={manyTabs} onPress={() => actions.newSplit(tab.id)} />
             )}
@@ -101,6 +122,7 @@ export function TabPage({ tab, selected, page, manyTabs }: Props) {
                         pageOrigin={origin}
                         focused={selected && tab.focusedSplitId === leaf.id}
                         isTopRight={topRight === leaf.id}
+                        framed={framed}
                         ghost={leaf.id === draggedId}
                         overlay={showOverlay}
                         zoomWheel={selected && ctrlHeld && !dragging}

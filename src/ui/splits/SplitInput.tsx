@@ -27,6 +27,9 @@ import {
     textWithoutReplyPrefix,
     type MessageOverflowMode,
 } from "../input/reply";
+import { IconButton as ModernIconButton } from "../modern/controls/IconButton";
+import { MODERN_ICONS } from "../modern/icons";
+import { COMPOSER_REPLY_GAP, composerMetrics } from "../modern/splits/composerMetrics";
 import { useApp } from "../state/AppContext";
 import { inputRegistry, type InputCommand } from "../state/inputs";
 import { replySenderFor } from "../state/replies";
@@ -51,6 +54,7 @@ type Props = {
     focusKey?: string;
     fixedReply?: ReplyTarget;
     placeholder?: string;
+    compact?: boolean;
     onEmotePopup?: () => void;
 };
 
@@ -68,7 +72,7 @@ function lineHeightFor(fontSize: number): number {
 }
 
 export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInput(
-    { splitId, channel, channelName, focusKey, fixedReply, placeholder: placeholderOverride, onEmotePopup },
+    { splitId, channel, channelName, focusKey, fixedReply, placeholder: placeholderOverride, compact, onEmotePopup },
     ref,
 ) {
     const services = useApp();
@@ -81,6 +85,7 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
     const [textWidth, setTextWidth] = useState(0);
     const [measuredHeight, setMeasuredHeight] = useState(0);
     const [replyBarHeight, setReplyBarHeight] = useState(0);
+    const [hasFocus, setHasFocus] = useState(false);
     const input = useRef<TextInputHandle>(null);
     const history = useRef(emptyHistory());
     const cycle = useRef<TabCycle | undefined>(undefined);
@@ -92,9 +97,14 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
     replyRef.current = replyTarget;
     const registryKey = focusKey ?? splitId;
     const overflowMode = (settings.messageOverflow ?? "highlight") as MessageOverflowMode;
-    const lineHeight = lineHeightFor(fonts.chatSize);
+    const tokens = theme.modern;
+    const composer = tokens ? composerMetrics(!!compact) : undefined;
+    const lineHeight = composer ? composer.lineHeight : lineHeightFor(fonts.chatSize);
+    const minHeight = composer ? composer.minHeight : MIN_HEIGHT;
 
-    const loggedInPlaceholder = accounts.current ? `Send message as ${accounts.current}...` : "Log in to send messages...";
+    const chatterinoPlaceholder = accounts.current ? `Send message as ${accounts.current}...` : "Log in to send messages...";
+    const modernPlaceholder = accounts.current ? `Send a message as ${accounts.current}` : "Log in to send messages";
+    const loggedInPlaceholder = tokens ? modernPlaceholder : chatterinoPlaceholder;
     const placeholder = placeholderOverride ?? loggedInPlaceholder;
 
     const caretPosition = () => Math.min(caret.current ?? textRef.current.length, textRef.current.length);
@@ -120,6 +130,8 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
             return emotes.map((emote) => ({
                 key: `${emote.provider}:${emote.name}`,
                 label: `${emote.name} - ${providerLabel(emote)}`,
+                name: emote.name,
+                detail: providerLabel(emote),
                 image: emote.url,
                 insert: `${emote.name} `,
             }));
@@ -307,10 +319,12 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
 
     const inlineReply = replyTarget && !fixedReply ? replyTarget : undefined;
     const maxTotal = inlineReply ? MAX_HEIGHT_WITH_REPLY : MAX_HEIGHT;
-    const replySpace = inlineReply ? replyBarHeight + (theme.isLight ? 3 : 1) : 0;
+    const chatterinoReplyGap = theme.isLight ? 3 : 1;
+    const replyGap = composer ? COMPOSER_REPLY_GAP : chatterinoReplyGap;
+    const replySpace = inlineReply ? replyBarHeight + replyGap : 0;
     const lines = Math.max(1, Math.round(measuredHeight / lineHeight));
-    const wanted = MIN_HEIGHT + (lines - 1) * lineHeight;
-    const boxHeight = Math.max(MIN_HEIGHT, Math.min(wanted, maxTotal - replySpace));
+    const wanted = minHeight + (lines - 1) * lineHeight;
+    const boxHeight = Math.max(minHeight, Math.min(wanted, maxTotal - replySpace));
     const length = text.length;
     const overLimit = length > MESSAGE_LIMIT;
     const counterColor = overLimit ? OVERFLOW_COLOR : theme.input.text;
@@ -320,6 +334,131 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
     const textStyle = { fontFamily: fonts.chatFamily, fontSize: fonts.chatSize, lineHeight };
     const textHeight = boxHeight - TEXT_TOP - 2;
     const wrapWidth = Math.max(0, textWidth - INPUT_WRAP_MARGIN);
+    const openEmotes = () => (onEmotePopup ? onEmotePopup() : services.openOverlay({ kind: "emotes", splitId, channel: channelName }));
+    const handleFocus = () => {
+        setHasFocus(true);
+        inputRegistry.setFocused(registryKey);
+        if (!fixedReply) services.actions.focusSplit(splitId, false);
+    };
+    const handleBlur = () => {
+        setHasFocus(false);
+        inputRegistry.blurred(registryKey);
+    };
+    const measureLayer =
+        textWidth > 0 ? (
+            <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: wrapWidth, opacity: 0 }}>
+                <Text onLayout={handleMeasure} style={{ width: wrapWidth, ...textStyle }}>
+                    {`${text}\u200b`}
+                </Text>
+            </View>
+        ) : null;
+
+    if (tokens && composer) {
+        const overflowColor = tokens.mention;
+        const modernTextHeight = boxHeight - 2 - composer.textInset * 2;
+        const showCounter = prefs.showMessageLength && length > 0;
+        return (
+            <View
+                testID={`split-input-${splitId}`}
+                style={{
+                    paddingTop: composer.paddingTop,
+                    paddingHorizontal: composer.paddingHorizontal,
+                    paddingBottom: composer.paddingBottom,
+                    backgroundColor: tokens.bgChat,
+                    borderTopWidth: composer.dividerWidth,
+                    borderTopColor: tokens.lineSubtle,
+                }}
+            >
+                {popupOpen ? (
+                    <CompletionPopup
+                        rows={popupRows}
+                        selected={selectedRow}
+                        bottom={boxHeight + replySpace + composer.paddingBottom}
+                        left={composer.paddingHorizontal}
+                        theme={theme}
+                        fonts={fonts}
+                        onPick={acceptRow}
+                    />
+                ) : null}
+                {inlineReply ? (
+                    <View style={{ marginBottom: COMPOSER_REPLY_GAP }} onLayout={(event) => setReplyBarHeight(Math.round(event.nativeEvent.layout.height))}>
+                        <ReplyBar splitId={splitId} target={inlineReply} onCancel={cancelReply} />
+                    </View>
+                ) : null}
+                <View
+                    testID={`input-box-${splitId}`}
+                    style={{
+                        height: boxHeight,
+                        flexDirection: "row",
+                        gap: 4,
+                        paddingLeft: 12,
+                        paddingRight: 4,
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        borderColor: hasFocus ? tokens.accent : tokens.lineStrong,
+                        backgroundColor: tokens.bgInput,
+                        overflow: "hidden",
+                    }}
+                >
+                    <View style={{ flex: 1, minWidth: 0, marginTop: composer.textInset }}>
+                        <TextInput
+                            ref={input}
+                            testID={`input-${splitId}`}
+                            accessibilityLabel={`Message ${channelName}`}
+                            multiline
+                            value={text}
+                            placeholder={placeholder}
+                            placeholderTextColor={tokens.text3}
+                            onChangeText={handleChange}
+                            onSubmitEditing={handleSubmit}
+                            onKeyPress={handleKey}
+                            onMouseDown={() => {
+                                caret.current = undefined;
+                            }}
+                            onLayout={handleTextLayout}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            style={{ height: modernTextHeight, color: tokens.text, ...textStyle }}
+                        />
+                        {highlightOverflow ? (
+                            <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: wrapWidth }}>
+                                <Text testID={`input-overflow-${splitId}`} style={{ width: wrapWidth, color: "rgba(0, 0, 0, 0)", ...textStyle }}>
+                                    {overflow.allowed}
+                                    <Text style={{ color: overflowColor }}>{overflow.overflow}</Text>
+                                </Text>
+                            </View>
+                        ) : null}
+                        {measureLayer}
+                    </View>
+                    {showCounter ? (
+                        <Text
+                            testID={`input-length-${splitId}`}
+                            style={{
+                                alignSelf: "flex-end",
+                                marginBottom: composer.textInset,
+                                color: overLimit ? overflowColor : tokens.text3,
+                                fontFamily: fonts.uiFamily,
+                                fontSize: 12,
+                                lineHeight,
+                            }}
+                        >
+                            {String(length)}
+                        </Text>
+                    ) : null}
+                    <View style={{ alignSelf: "flex-end", marginBottom: composer.emoteInset }}>
+                        <ModernIconButton
+                            testID={`emote-button-${splitId}`}
+                            icon={MODERN_ICONS.emote}
+                            label="Emotes"
+                            size={composer.emoteSize}
+                            iconSize={composer.emoteIcon}
+                            onPress={openEmotes}
+                        />
+                    </View>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View testID={`split-input-${splitId}`} style={{ padding: margin }}>

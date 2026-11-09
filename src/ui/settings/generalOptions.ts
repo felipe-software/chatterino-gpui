@@ -28,6 +28,20 @@ const THEMES = options([
 
 const THEME_CHOICES = [...THEMES, { value: "system", label: "System" }];
 
+const UI_STYLES = options([
+    ["chatterino", "Chatterino"],
+    ["modern", "Modern"],
+]);
+
+const ACCENTS = options([
+    ["sky", "Sky"],
+    ["teal", "Teal"],
+    ["indigo", "Indigo"],
+    ["pink", "Pink"],
+    ["orange", "Orange"],
+    ["lime", "Lime"],
+]);
+
 const KEY_MODIFIERS = options([
     ["none", "None"],
     ["shift", "Shift"],
@@ -71,7 +85,9 @@ function interfaceItems(): GeneralItem[] {
     const systemOnly = (access: SettingsAccess) => access.settings.systemTheme;
     return [
         title("Interface"),
+        choice("uiStyle", "Style", UI_STYLES, { tooltip: "Modern is the redesigned look: rounded tabs, the Inter font and an accent colour." }),
         { kind: "dropdown", id: "theme", label: "Theme", options: THEME_CHOICES, get: themeValue, set: setTheme },
+        choice("accentColor", "Accent colour", ACCENTS, { enabled: (access) => access.settings.uiStyle === "modern" }),
         choice("darkSystemTheme", "Dark system theme", THEMES, {
             tooltip: "This theme is selected if your system is in a dark theme and you enabled the adaptive 'System' theme.",
             enabled: systemOnly,

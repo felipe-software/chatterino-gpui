@@ -1,4 +1,4 @@
-import type { ChatListElement, ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListElement, ChatListMessage } from "../native/chatList";
 import type { Channel } from "./api";
 import { parseInternalLink } from "./links/internal";
 

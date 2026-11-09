@@ -1,5 +1,6 @@
 import { Svg, View } from "@felipe-software/react-native-gpui";
 import { withAlpha } from "../colors";
+import { useApp } from "../state/AppContext";
 import type { Point, Ripple } from "./useButtonEffect";
 
 type Props = { width: number; height: number; color: string; factor: number; pointer: Point; ripples: Ripple[] };
@@ -12,6 +13,8 @@ const RIPPLE_ALPHA = 95 / 255;
 const SPOT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g"><stop offset="0" stop-color="#fff" stop-opacity="${SPOT_ALPHA.toFixed(4)}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(#g)"/></svg>`;
 
 export function HoverGlow({ width, height, color, factor, pointer, ripples }: Props) {
+    const { theme } = useApp();
+    if (theme.modern) return null;
     if (factor <= 0 && ripples.length === 0) return null;
     const radius = width / 2;
     return (

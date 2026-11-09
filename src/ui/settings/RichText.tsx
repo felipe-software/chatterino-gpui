@@ -9,6 +9,8 @@ type Props = {
     color?: string;
     linkColor?: string;
     fontSize?: number;
+    lineHeight?: number;
+    padding?: number;
     testID?: string;
     onOpen: (url: string) => void;
 };
@@ -44,19 +46,28 @@ function words(token: Token): Token[] {
     return parts.map((part) => ({ text: part, url: token.url }));
 }
 
-export function RichText({ text, links = [], color = SETTINGS_STYLE.description, linkColor = SETTINGS_STYLE.externalLink, fontSize = SETTINGS_FONT_SIZE, testID, onOpen }: Props) {
+export function RichText({
+    text,
+    links = [],
+    color = SETTINGS_STYLE.description,
+    linkColor = SETTINGS_STYLE.externalLink,
+    fontSize = SETTINGS_FONT_SIZE,
+    lineHeight = Math.round(fontSize * QT_LINE_SPACING),
+    padding = PARAGRAPH_PAD,
+    testID,
+    onOpen,
+}: Props) {
     const { fonts } = useApp();
-    const lineHeight = Math.round(fontSize * QT_LINE_SPACING);
     const base = { fontFamily: fonts.appFamily, fontSize, color, lineHeight };
     if (links.length === 0) {
         return (
-            <Text testID={testID} style={{ ...base, paddingVertical: PARAGRAPH_PAD }}>
+            <Text testID={testID} style={{ ...base, paddingVertical: padding }}>
                 {text}
             </Text>
         );
     }
     return (
-        <View testID={testID} style={{ paddingVertical: PARAGRAPH_PAD }}>
+        <View testID={testID} style={{ paddingVertical: padding }}>
             {text.split("\n").map((line, lineIndex) => (
                 <View key={lineIndex} style={{ flexDirection: "row", flexWrap: "wrap", minHeight: lineHeight }}>
                     {tokenizeLine(line, links)

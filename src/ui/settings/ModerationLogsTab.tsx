@@ -16,7 +16,7 @@ export const NO_LOGGING = "Not available in this app: the runtime has no file-wr
 
 const COLUMNS: TableColumn<string>[] = [{ title: "Twitch channels", kind: "text", text: (row) => row, edit: (_row, value) => value.trim().toLowerCase() }];
 
-function defaultLogDirectory(): string {
+export function defaultLogDirectory(): string {
     const storage = LocalStorage.getPath();
     if (!storage) return "~/.local/share/chatterino/Logs";
     return `${storage.slice(0, storage.lastIndexOf("/"))}/Logs`;

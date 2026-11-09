@@ -11,6 +11,7 @@ import { useApp } from "../state/AppContext";
 import { isSpecialChannel } from "../state/specialChannels";
 import { useModRights } from "../state/useChannelRights";
 import { useStore } from "../state/useStore";
+import { ModernSplitHeader, type ModernHeaderHandlers, type ModerationToggle } from "../modern/splits/ModernSplitHeader";
 import { headerTooltipBlocks } from "./headerTooltip";
 import { ModesLabel } from "./ModesLabel";
 import { splitMenuEntries } from "./splitMenu";
@@ -25,6 +26,7 @@ type Props = {
     isTopRight: boolean;
     rect: Rect;
     detached?: boolean;
+    compact?: boolean;
     onClear: () => void;
     onClosePopup?: () => void;
 };
@@ -35,7 +37,13 @@ const BUTTON_WIDTH = 28;
 const DRAG_DISTANCE = 15;
 const DOUBLE_CLICK_MS = 400;
 
-export function SplitHeader({ split, tabId, channel, info, focused, isTopRight, rect, detached, onClear, onClosePopup }: Props) {
+function modernName(channel: string, displayName: string | undefined, isSpecial: boolean): string {
+    if (!channel) return "No channel";
+    if (isSpecial) return channel;
+    return displayName || channel;
+}
+
+export function SplitHeader({ split, tabId, channel, info, focused, isTopRight, rect, detached, compact, onClear, onClosePopup }: Props) {
     const services = useApp();
     const { theme, fonts, actions, settings, core } = services;
     const accounts = useStore(core.accounts);
@@ -83,10 +91,7 @@ export function SplitHeader({ split, tabId, channel, info, focused, isTopRight, 
         actions.setModerationMode(split.id, !moderationMode);
     };
 
-    const handleDown = (event: MouseResponderEvent) => {
-        const onButton = event.nativeEvent.locationX >= rect.width - buttonsWidth;
-        services.hideTooltip(tooltipOwner);
-        if (event.nativeEvent.pressDrag || onButton || detached) return;
+    const pressTitle = (event: MouseResponderEvent) => {
         const now = Date.now();
         const isDoubleClick = now - lastDown.current < DOUBLE_CLICK_MS;
         lastDown.current = now;
@@ -97,6 +102,50 @@ export function SplitHeader({ split, tabId, channel, info, focused, isTopRight, 
         }
         drag.begin(event);
     };
+
+    const handleDown = (event: MouseResponderEvent) => {
+        const onButton = event.nativeEvent.locationX >= rect.width - buttonsWidth;
+        services.hideTooltip(tooltipOwner);
+        if (event.nativeEvent.pressDrag || onButton || detached) return;
+        pressTitle(event);
+    };
+
+    if (theme.modern) {
+        const handlers: ModernHeaderHandlers = {
+            dragDown: (event) => {
+                services.hideTooltip(tooltipOwner);
+                if (event.nativeEvent.pressDrag || detached) return;
+                pressTitle(event);
+            },
+            dragMove: drag.move,
+            dragUp: drag.end,
+            hoverTitle: showTooltip,
+            leaveTitle: () => services.hideTooltip(tooltipOwner),
+            menu: openMenu,
+            search: () => services.openOverlay({ kind: "search", splitId: split.id, channels: [split.channel] }),
+            addSplit: () => actions.newSplit(tabId),
+            viewers: () => services.openUrl(`https://www.twitch.tv/${split.channel}`),
+        };
+        const moderation: ModerationToggle | undefined = showModeration
+            ? { enabled: moderationMode, onToggle: toggleModeration, onSettings: () => services.openOverlay({ kind: "settings", page: "Moderation" }) }
+            : undefined;
+        return (
+            <ModernSplitHeader
+                splitId={split.id}
+                name={modernName(split.channel, info?.displayName, isSpecial)}
+                live={isSpecial ? undefined : info?.live}
+                hasChannel={!!split.channel}
+                focused={focused}
+                filtered={titleOptions.filtered}
+                modes={modes.replace(/\n/g, " ")}
+                compact={!!compact}
+                showSearch={!compact && !!split.channel}
+                showAddSplit={focused && !detached}
+                moderation={moderation}
+                handlers={handlers}
+            />
+        );
+    }
 
     return (
         <View

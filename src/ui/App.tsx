@@ -11,6 +11,7 @@ import { hitAreas } from "./state/hitAreas";
 import { newId } from "./state/ids";
 import { inputRegistry } from "./state/inputs";
 import { createLayoutActions } from "./state/layoutActions";
+import { modernTheme } from "./modern/modernTheme";
 import { closeOverlay, openOverlay, type Overlay, type OverlaySpec, type TooltipSpec } from "./state/overlays";
 import { createPrefsStore } from "./state/prefs";
 import { createUiStore } from "./state/store";
@@ -58,8 +59,12 @@ export function App() {
         [core, open],
     );
 
-    const theme = useMemo(() => themeFor(settings.theme), [settings.theme]);
-    const fonts = useMemo(() => fontsFor(settings), [settings.fontFamily, settings.fontSize, settings.uiScale]);
+    const isModern = settings.uiStyle === "modern";
+    const theme = useMemo(
+        () => (isModern ? modernTheme(settings.theme, settings.accentColor) : themeFor(settings.theme)),
+        [isModern, settings.theme, settings.accentColor],
+    );
+    const fonts = useMemo(() => fontsFor(settings), [settings.fontFamily, settings.fontSize, settings.uiScale, settings.uiStyle]);
 
     const services = useMemo<AppServices>(
         () => ({

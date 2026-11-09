@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { Text, View } from "@felipe-software/react-native-gpui";
 import type { HotkeyOverride } from "../../data/api";
+import { HotkeyEditor } from "../modern/settingsPages/HotkeyEditor";
 import { useApp } from "../state/AppContext";
-import { DEFAULT_HOTKEYS, HOTKEY_CATEGORIES, type HotkeyCategory } from "./hotkeyCatalog";
+import { DEFAULT_HOTKEYS, HOTKEY_CATEGORIES, type HotkeyCategory, type HotkeyEntry } from "./hotkeyCatalog";
 import { SComboBox } from "./SComboBox";
 import { SETTINGS_FONT_SIZE, SETTINGS_STYLE } from "./settingsStyle";
 import { SLineEdit } from "./SLineEdit";
 import { SPushButton } from "./SPushButton";
 
-type Props = { onAccept: (override: HotkeyOverride) => void; onCancel: () => void };
+type Props = { entry?: HotkeyEntry; onAccept: (override: HotkeyOverride) => void; onCancel: () => void };
 
 function actionsFor(category: HotkeyCategory) {
     return DEFAULT_HOTKEYS.filter((entry) => entry.category === category && entry.action).map((entry) => ({ value: entry.action as string, label: entry.name }));
 }
 
-export function HotkeyEditContent({ onAccept, onCancel }: Props) {
-    const { fonts } = useApp();
+export function HotkeyEditContent({ entry, onAccept, onCancel }: Props) {
+    const { fonts, theme } = useApp();
     const [name, setName] = useState("");
     const [category, setCategory] = useState<HotkeyCategory>("Window");
     const [action, setAction] = useState(actionsFor("Window")[0]?.value ?? "");
     const [key, setKey] = useState("");
+    if (theme.modern) return <HotkeyEditor entry={entry} onAccept={onAccept} onCancel={onCancel} />;
     const label = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE, width: 100 };
     const valid = name.trim().length > 0 && key.trim().length > 0 && !!action;
     return (

@@ -1,4 +1,5 @@
 import type { ThemeName } from "../data/api";
+import type { ModernTokens } from "./modern/tokens";
 
 export type TabStateColors = { background: string; line: string; text: string };
 export type TabState = "regular" | "newMessage" | "highlighted" | "selected";
@@ -41,6 +42,7 @@ export type Theme = {
     scrollbar: { thumb: string; thumbSelected: string };
     buttons: { plus: string; kebab: string; hover: string; icon: string; iconHover: string };
     moreMessages: { background: string; text: string };
+    modern?: ModernTokens;
 };
 
 const BLUE_PREVIEW = "rgba(0, 148, 255, 0.188)";
@@ -258,7 +260,52 @@ export const SETTINGS_COLORS = {
     description: "#999999",
 };
 
+export type MenuColors = typeof MENU_COLORS;
+
+function modernChrome(tokens: ModernTokens): ChromeColors {
+    return {
+        background: tokens.bgRaised,
+        panel: tokens.bgChat,
+        text: tokens.text,
+        muted: tokens.text2,
+        disabledText: tokens.text3,
+        border: tokens.lineStrong,
+        outline: tokens.lineStrong,
+        field: tokens.bgChat,
+        fieldBorder: tokens.lineStrong,
+        focusBorder: tokens.accent,
+        button: tokens.bgInput,
+        buttonHover: tokens.bgPress,
+        buttonBorder: tokens.lineStrong,
+        highlight: tokens.accentSoft,
+        highlightOutline: tokens.accent,
+        highlightText: tokens.text,
+        titleBar: tokens.bgRaised,
+        separator: tokens.lineSubtle,
+    };
+}
+
+function modernMenu(tokens: ModernTokens): MenuColors {
+    return {
+        background: tokens.bgRaised,
+        border: tokens.lineStrong,
+        text: tokens.text,
+        disabledText: tokens.text3,
+        separator: tokens.lineSubtle,
+        highlight: tokens.bgHover,
+        highlightOutline: tokens.bgHover,
+        checkBorder: tokens.lineHover,
+        checkFill: tokens.bgRaised,
+        checkMark: tokens.onAccent,
+    };
+}
+
+export function menuColors(theme: Theme): MenuColors {
+    return theme.modern ? modernMenu(theme.modern) : MENU_COLORS;
+}
+
 export function chromeColors(theme: Theme): ChromeColors {
+    if (theme.modern) return modernChrome(theme.modern);
     if (!theme.isLight) return FUSION_DARK;
     return {
         ...FUSION_DARK,

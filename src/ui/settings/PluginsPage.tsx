@@ -1,5 +1,6 @@
 import { Text, View } from "@felipe-software/react-native-gpui";
 import { LocalStorage } from "@felipe-software/react-native-gpui";
+import { ModernPluginsPage } from "../modern/settingsPages/ModernPluginsPage";
 import { useApp } from "../state/AppContext";
 import { RichText } from "./RichText";
 import { SCheckBox } from "./SCheckBox";
@@ -10,6 +11,7 @@ export const PLUGINS_WARNING =
     "Plugins can expand functionality of Chatterino. They can be made in Lua. This functionality is still in public alpha stage. Use ONLY the plugins you trust. The permission system is best effort, always assume plugins can bypass permissions and can execute arbitrary code. To see how to create plugins look at the manual.";
 
 const NO_PLUGINS = "Not available in this app: there is no Lua runtime, so plugins cannot be loaded.";
+const MANUAL_URL = "https://github.com/Chatterino/chatterino2/blob/master/docs/wip-plugins.md";
 
 function pluginsDirectory(): string {
     const storage = LocalStorage.getPath();
@@ -18,8 +20,9 @@ function pluginsDirectory(): string {
 }
 
 export function PluginsPage() {
-    const { settings, fonts, openUrl } = useApp();
+    const { settings, fonts, openUrl, theme } = useApp();
     const { update } = useSettingsUpdate();
+    if (theme.modern) return <ModernPluginsPage pluginsDirectory={pluginsDirectory()} unavailable={NO_PLUGINS} manualUrl={MANUAL_URL} />;
     return (
         <View testID="settings-plugins" style={{ flex: 1, padding: 10, paddingRight: 17 }}>
             <Text style={{ color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE, marginLeft: 1, marginBottom: 2 }}>
@@ -28,7 +31,7 @@ export function PluginsPage() {
             <View style={{ borderWidth: 1, borderColor: SETTINGS_STYLE.groupBorder, borderRadius: 2, paddingHorizontal: 10, paddingTop: 7, paddingBottom: 85 }}>
                 <RichText
                     text={PLUGINS_WARNING}
-                    links={[{ label: "look at the manual", url: "https://github.com/Chatterino/chatterino2/blob/master/docs/wip-plugins.md" }]}
+                    links={[{ label: "look at the manual", url: MANUAL_URL }]}
                     color={SETTINGS_STYLE.text}
                     onOpen={openUrl}
                 />

@@ -1,5 +1,6 @@
 import { View } from "@felipe-software/react-native-gpui";
 import type { Nickname } from "../../data/api";
+import { ModernNicknamesPage } from "../modern/settingsPages/ModernNicknamesPage";
 import { useApp } from "../state/AppContext";
 import { EditableModelView } from "./EditableModelView";
 import { useSettingsUi } from "./SettingsContext";
@@ -18,9 +19,10 @@ export const NICKNAMES_NOTE =
     "Nicknames do not work with features such as user highlights and filters.\nWith those features you will still need to use the user's original name.";
 
 export function NicknamesPage() {
-    const { settings } = useApp();
+    const { settings, theme } = useApp();
     const { query } = useSettingsUi();
     const { update } = useSettingsUpdate();
+    if (theme.modern) return <ModernNicknamesPage />;
     return (
         <View testID="settings-nicknames" style={{ flex: 1, padding: 10, paddingRight: 9, gap: 6 }}>
             <SLabel text={NICKNAMES_NOTE} greyable={false} />

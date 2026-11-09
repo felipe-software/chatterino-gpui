@@ -1,15 +1,18 @@
 import { Image, Text, View, useWindowDimensions } from "@felipe-software/react-native-gpui";
+import { FadeIn } from "../modern/controls/FadeIn";
 import { useApp } from "../state/AppContext";
 import type { TooltipBlock, TooltipSpec } from "../state/overlays";
 
-const CHAR_WIDTH = 7.6;
-const LINE_HEIGHT = 16;
-const PADDING_X = 10;
-const PADDING_Y = 5;
+type Metrics = { charWidth: number; lineHeight: number; paddingX: number; paddingY: number };
+
+const LEGACY: Metrics = { charWidth: 7.6, lineHeight: 16, paddingX: 10, paddingY: 5 };
+const MODERN: Metrics = { charWidth: 7.4, lineHeight: 16, paddingX: 10, paddingY: 6 };
 const IMAGE_GAP = 6;
 const MAX_TEXT_WIDTH = 380;
 const CURSOR_OFFSET = 16;
 const IMAGE_SCALE = 4;
+const MODERN_FONT_SIZE = 12;
+const MODERN_RADIUS = 6;
 
 function imageSize(spec: TooltipSpec): { width: number; height: number } {
     if (!spec.image) return { width: 0, height: 0 };
@@ -25,9 +28,11 @@ function blocksOf(spec: TooltipSpec): TooltipBlock[] {
     return blocks;
 }
 
-const MAX_LINE_CHARS = Math.floor(MAX_TEXT_WIDTH / CHAR_WIDTH);
+function maxLineChars(metrics: Metrics): number {
+    return Math.floor(MAX_TEXT_WIDTH / metrics.charWidth);
+}
 
-export function wrapTooltipText(text: string, maxChars = MAX_LINE_CHARS): string[] {
+export function wrapTooltipText(text: string, maxChars = maxLineChars(LEGACY)): string[] {
     const lines: string[] = [];
     let line = "";
     for (const word of text.split(/\s+/).filter(Boolean)) {
@@ -43,24 +48,26 @@ export function wrapTooltipText(text: string, maxChars = MAX_LINE_CHARS): string
     return lines;
 }
 
-function textWidth(block: TooltipBlock): number {
+function textWidth(block: TooltipBlock, metrics: Metrics): number {
     if (block.kind === "image") return block.width;
-    const longest = wrapTooltipText(block.text).reduce((widest, line) => Math.max(widest, line.length), 0);
-    return Math.min(MAX_TEXT_WIDTH, Math.ceil(longest * CHAR_WIDTH));
+    const longest = wrapTooltipText(block.text, maxLineChars(metrics)).reduce((widest, line) => Math.max(widest, line.length), 0);
+    return Math.min(MAX_TEXT_WIDTH, Math.ceil(longest * metrics.charWidth));
 }
 
-function blockHeight(block: TooltipBlock): number {
+function blockHeight(block: TooltipBlock, metrics: Metrics): number {
     if (block.kind === "image") return block.height + IMAGE_GAP;
-    return wrapTooltipText(block.text).length * LINE_HEIGHT;
+    return wrapTooltipText(block.text, maxLineChars(metrics)).length * metrics.lineHeight;
 }
 
 export function Tooltip({ spec }: { spec: TooltipSpec }) {
-    const { fonts } = useApp();
+    const { theme, fonts } = useApp();
+    const tokens = theme.modern;
+    const metrics = tokens ? MODERN : LEGACY;
     const screen = useWindowDimensions();
     const blocks = blocksOf(spec);
-    const contentWidth = blocks.reduce((widest, block) => Math.max(widest, textWidth(block)), 0);
-    const width = contentWidth + PADDING_X * 2;
-    const height = blocks.reduce((sum, block) => sum + blockHeight(block), 0) + PADDING_Y * 2;
+    const contentWidth = blocks.reduce((widest, block) => Math.max(widest, textWidth(block, metrics)), 0);
+    const width = contentWidth + metrics.paddingX * 2;
+    const height = blocks.reduce((sum, block) => sum + blockHeight(block, metrics), 0) + metrics.paddingY * 2;
     const below = spec.placement === "below";
     const cursor = spec.cursor ?? { x: spec.anchor.x + spec.anchor.width / 2, y: spec.anchor.y + spec.anchor.height / 2 };
     const preferredLeft = below ? spec.anchor.x + spec.anchor.width / 2 - width / 2 : cursor.x + CURSOR_OFFSET;
@@ -70,8 +77,13 @@ export function Tooltip({ spec }: { spec: TooltipSpec }) {
     const flipUp = !below && overflowsRight && overflowsBottom;
     const left = Math.max(0, Math.min(preferredLeft, screen.width - width));
     const top = flipUp ? cursor.y - height - CURSOR_OFFSET : Math.max(0, Math.min(preferredTop, screen.height - height));
+    const textStyle = tokens
+        ? { color: tokens.tooltipFg, fontFamily: fonts.uiFamily, fontSize: MODERN_FONT_SIZE, lineHeight: metrics.lineHeight, fontWeight: "500" as const }
+        : { color: "#ffffff", fontFamily: fonts.appFamily, fontSize: fonts.appSize };
+    const frameStyle = tokens ? { backgroundColor: tokens.tooltipBg, borderRadius: MODERN_RADIUS } : { backgroundColor: "rgba(0, 0, 0, 0.8)" };
+    const Frame = tokens ? FadeIn : View;
     return (
-        <View
+        <Frame
             testID="tooltip"
             pointerEvents="none"
             style={{
@@ -79,10 +91,10 @@ export function Tooltip({ spec }: { spec: TooltipSpec }) {
                 left,
                 top,
                 width,
-                paddingHorizontal: PADDING_X,
-                paddingVertical: PADDING_Y,
+                paddingHorizontal: metrics.paddingX,
+                paddingVertical: metrics.paddingY,
                 alignItems: "center",
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                ...frameStyle,
             }}
         >
             {blocks.map((block, index) =>
@@ -95,13 +107,13 @@ export function Tooltip({ spec }: { spec: TooltipSpec }) {
                         resizeMode="contain"
                     />
                 ) : (
-                    wrapTooltipText(block.text).map((line, lineIndex) => (
-                        <Text key={`${index}-${lineIndex}`} style={{ color: "#ffffff", fontFamily: fonts.appFamily, fontSize: fonts.appSize, textAlign: "center" }}>
+                    wrapTooltipText(block.text, maxLineChars(metrics)).map((line, lineIndex) => (
+                        <Text key={`${index}-${lineIndex}`} style={{ ...textStyle, textAlign: "center" }}>
                             {line || " "}
                         </Text>
                     ))
                 ),
             )}
-        </View>
+        </Frame>
     );
 }

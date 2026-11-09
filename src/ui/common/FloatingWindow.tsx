@@ -1,6 +1,8 @@
 import { useContext, useRef, useState, type ReactNode } from "react";
 import { Svg, Text, View, useWindowDimensions, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { ICONS } from "../icons";
+import { DialogFrameContext } from "../modern/controls/DialogFrameContext";
+import { DialogFrameHeader } from "../modern/controls/DialogFrameHeader";
 import { OverlayWindowContext } from "../overlays/overlayWindows";
 import { OverlayWindowFrame } from "../overlays/OverlayWindowFrame";
 import { useApp } from "../state/AppContext";
@@ -15,20 +17,23 @@ type Props = {
     y?: number;
     modal?: boolean;
     frameless?: boolean;
+    header?: ReactNode;
     onClose: () => void;
     onBackdropPress?: () => void;
     children: ReactNode;
 };
 
 const TITLE_HEIGHT = 28;
+const IN_APP_FRAME = { decorated: false };
 
 function clamp(value: number, low: number, high: number): number {
     return Math.max(low, Math.min(high, value));
 }
 
-export function FloatingWindow({ testID, title, width, height, x, y, modal, frameless, onClose, onBackdropPress, children }: Props) {
+export function FloatingWindow({ testID, title, width, height, x, y, modal, frameless, header, onClose, onBackdropPress, children }: Props) {
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
+    const tokens = theme.modern;
     const screen = useWindowDimensions();
     const initialX = x ?? Math.round((screen.width - width) / 2);
     const initialY = y ?? Math.round((screen.height - height) / 2);
@@ -51,6 +56,7 @@ export function FloatingWindow({ testID, title, width, height, x, y, modal, fram
                 x={x}
                 y={y}
                 frameless={frameless}
+                header={header}
                 onClose={onClose}
                 onBackdropPress={onBackdropPress}
             >
@@ -68,16 +74,56 @@ export function FloatingWindow({ testID, title, width, height, x, y, modal, fram
         if (!current) return;
         setOffset({ x: current.start.x + event.nativeEvent.pageX - current.x, y: current.start.y + event.nativeEvent.pageY - current.y });
     };
+    const endMove = (event: MouseResponderEvent) => {
+        if (event.nativeEvent.pressDrag) return;
+        move(event);
+        grab.current = null;
+    };
+    const backdrop = hasBackdrop ? (
+        <View testID={`${testID}-backdrop`} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }} onMouseDown={() => onBackdropPress?.()} />
+    ) : null;
+
+    if (tokens) {
+        return (
+            <DialogFrameContext.Provider value={IN_APP_FRAME}>
+                {backdrop}
+                <View
+                    testID={testID}
+                    onMouseDown={() => undefined}
+                    style={{
+                        position: "absolute",
+                        left,
+                        top,
+                        width,
+                        height,
+                        overflow: "hidden",
+                        backgroundColor: tokens.bgRaised,
+                        borderWidth: 1,
+                        borderColor: tokens.lineStrong,
+                        borderRadius: 12,
+                        boxShadow: tokens.shadow,
+                    }}
+                >
+                    <DialogFrameHeader
+                        testID={testID}
+                        title={title}
+                        header={header}
+                        frameless={!!frameless}
+                        decorated={false}
+                        onClose={onClose}
+                        onMouseDown={startMove}
+                        onMouseMove={move}
+                        onMouseUp={endMove}
+                    />
+                    <View style={{ flex: 1 }}>{children}</View>
+                </View>
+            </DialogFrameContext.Provider>
+        );
+    }
 
     return (
         <>
-            {hasBackdrop ? (
-                <View
-                    testID={`${testID}-backdrop`}
-                    style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
-                    onMouseDown={() => onBackdropPress?.()}
-                />
-            ) : null}
+            {backdrop}
             <View
                 testID={testID}
                 onMouseDown={() => undefined}
@@ -99,11 +145,7 @@ export function FloatingWindow({ testID, title, width, height, x, y, modal, fram
                     nativeListGroup={`window-${testID}`}
                     onMouseDown={startMove}
                     onMouseMove={move}
-                    onMouseUp={(event) => {
-                        if (event.nativeEvent.pressDrag) return;
-                        move(event);
-                        grab.current = null;
-                    }}
+                    onMouseUp={endMove}
                 >
                     <Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontFamily: fonts.appFamily, fontSize: fonts.appSize - 1 }}>
                         {title}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Text, View } from "@felipe-software/react-native-gpui";
+import { Button } from "../modern/controls/Button";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 import { SETTINGS_FONT_SIZE, SETTINGS_STYLE } from "./settingsStyle";
@@ -21,6 +22,15 @@ export function SPushButton({ label, testID, disabled, primary, tooltip, minWidt
     const colors = chromeColors(theme);
     const hover = useSettingsTooltip(tooltip);
     const [hovered, setHovered] = useState(false);
+
+    if (theme.modern) {
+        return (
+            <View style={{ flexGrow: grow ? 1 : 0 }} {...hover}>
+                <Button testID={testID} label={label} variant={primary ? "primary" : "secondary"} disabled={disabled} grow={grow} onPress={onPress} />
+            </View>
+        );
+    }
+
     const background = hovered && !disabled ? colors.buttonHover : colors.button;
     const borderColor = primary ? colors.focusBorder : colors.buttonBorder;
     return (

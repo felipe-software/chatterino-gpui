@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { View } from "@felipe-software/react-native-gpui";
 import { buildFilterText, FILTER_OPERATORS, type FilterOperand } from "../../data/filters/records";
+import { ModernFilterEditor } from "../modern/settingsPages/ModernFilterEditor";
+import { useApp } from "../state/AppContext";
 import { FilterOperandRow } from "./FilterOperandRow";
 import { RegexInfoLink } from "./RegexInfoLink";
 import { SComboBox } from "./SComboBox";
@@ -12,10 +14,12 @@ type Props = { onAccept: (name: string, filter: string) => void; onCancel: () =>
 const OPERATOR_OPTIONS = FILTER_OPERATORS.map((entry) => ({ value: entry.op || "nothing", label: entry.label }));
 
 export function FilterEditorContent({ onAccept, onCancel }: Props) {
+    const { theme } = useApp();
     const [name, setName] = useState("My filter");
     const [left, setLeft] = useState<FilterOperand>({ type: "variable", value: "message.content" });
     const [op, setOp] = useState("contains");
     const [right, setRight] = useState<FilterOperand>({ type: "text", value: "hello" });
+    if (theme.modern) return <ModernFilterEditor onAccept={onAccept} onCancel={onCancel} />;
     const noRight = op === "nothing";
     return (
         <View style={{ flex: 1, padding: 10, gap: 8 }}>

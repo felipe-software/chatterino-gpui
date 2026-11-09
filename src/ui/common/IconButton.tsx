@@ -1,5 +1,6 @@
 import { Image, View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { effectColor } from "../colors";
+import { IconButton as ModernIconButton } from "../modern/controls/IconButton";
 import { useApp } from "../state/AppContext";
 import { HoverGlow } from "./HoverGlow";
 import { useButtonEffect } from "./useButtonEffect";
@@ -20,6 +21,20 @@ type Props = {
 export function IconButton({ testID, label, icon, width, height, iconWidth, iconHeight, opacity, onPress, onContextMenu }: Props) {
     const { theme } = useApp();
     const effect = useButtonEffect();
+    if (theme.modern) {
+        return (
+            <ModernIconButton
+                testID={testID}
+                label={label}
+                icon={icon}
+                width={width}
+                height={height}
+                iconSize={Math.max(iconWidth, iconHeight)}
+                onPress={onPress}
+                onContextMenu={onContextMenu}
+            />
+        );
+    }
     return (
         <View
             testID={testID}

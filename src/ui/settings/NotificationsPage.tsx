@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Platform, View } from "@felipe-software/react-native-gpui";
+import { ModernNotificationsPage } from "../modern/settingsPages/ModernNotificationsPage";
 import { useApp } from "../state/AppContext";
 import { EditableModelView } from "./EditableModelView";
 import { SCheckBox } from "./SCheckBox";
@@ -36,10 +37,11 @@ const COLUMNS: TableColumn<string>[] = [
 const FLASH_NOTE = "Not available in this app: the taskbar can only be flashed on macOS.";
 
 export function NotificationsPage() {
-    const { settings } = useApp();
+    const { settings, theme } = useApp();
     const { update } = useSettingsUpdate();
     const actions = useSettingsActions();
     const [tab, setTab] = useState(NOTIFICATION_TABS[0]);
+    if (theme.modern) return <ModernNotificationsPage />;
     return (
         <View testID="settings-notifications" style={{ flex: 1, padding: 10, paddingRight: 9, gap: 8 }}>
             <TabWidget testID="notifications" tabs={NOTIFICATION_TABS} selected={tab} onSelect={setTab}>

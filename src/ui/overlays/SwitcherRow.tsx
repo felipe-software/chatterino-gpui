@@ -1,5 +1,6 @@
 import { Image, Text, View } from "@felipe-software/react-native-gpui";
 import { assetPath } from "../assetPaths";
+import { SwitcherOption } from "../modern/popups/SwitcherOption";
 import { useApp } from "../state/AppContext";
 import type { SwitcherItem } from "./switcherItems";
 
@@ -16,6 +17,7 @@ function iconOf(item: SwitcherItem): string {
 
 export function SwitcherRow({ item, selected, onHover, onPress }: Props) {
     const { theme, fonts } = useApp();
+    if (theme.modern) return <SwitcherOption item={item} selected={selected} onHover={onHover} onPress={onPress} />;
     const text = { color: theme.header.text, fontFamily: fonts.uiFamily, fontSize: fonts.uiSize };
     const bold = { ...text, fontWeight: "700" as const };
     return (
