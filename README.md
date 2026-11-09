@@ -36,8 +36,6 @@ bun test
 bun run typecheck
 ```
 
-Development notes, feature list and known differences: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
 ## License
 
 MIT, see [LICENSE](LICENSE). Icons, sounds and avatars in `assets/` and `src/ui/assets/` come from
