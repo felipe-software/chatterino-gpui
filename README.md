@@ -10,7 +10,7 @@ Vulkan (Linux) or Metal (macOS).
 > Not an official Chatterino project. It reuses Chatterino's MIT-licensed icons, sounds and
 > contributor list; see [License](#license).
 
-![The Main tab: xQc on the left, forsen above sodapoppin on the right](docs/screenshots/main-tab.png)
+![Chatterino (react-native-gpui) on Linux: xQc on the left, forsen above sodapoppin on the right](docs/screenshots/main-tab.png)
 
 The chat log is the library's native `ChatList` element. Tabs, the split grid, headers, inputs,
 popups and dialogs are React components in `src/ui`, and the data (IRC, history, emotes, badges,
@@ -124,10 +124,8 @@ Popups and dialogs are real windows, as in Chatterino. A split in its own window
 
 <img src="docs/screenshots/popup-window.png" width="324" alt="A split popped out into its own window">
 
-[docs/compare-setup.md](docs/compare-setup.md) runs the installed Chatterino 2.5.5 (Flatpak) with
-the same layout, theme and font, so screenshots of both apps line up.
-[docs/chatterino-reference.md](docs/chatterino-reference.md) is the source-cited spec this app
-follows.
+`docs/compare/` runs the installed Chatterino 2.5.5 (Flatpak) with the same layout, theme and
+font, so screenshots of both apps line up.
 
 ### What is implemented
 
@@ -256,7 +254,7 @@ only after `ROOMSTATE`.
 | `src/ui/` | The React UI, see below |
 | `assets/` | Chatterino 2.5.5 settings icons, button images, sounds, avatars and contributor list |
 | `scripts/` | `run.mjs` (bundle and launch), `gpui.mjs` (finds the library's bundler and binary), `use-local-gpui.mjs`, `emote-timing.mjs` and `irc-quiet-proxy.mjs`, `gen-data.mjs` (regenerates the emoji and TLD tables), `smoke-data.mjs` (joins live channels and prints what the data layer built) |
-| `docs/` | The Chatterino reference, the side-by-side setup and the README screenshots |
+| `docs/` | The side-by-side setup files in `compare/` and the README screenshots |
 
 | `src/ui` folder | Contents |
 | --- | --- |
@@ -275,5 +273,4 @@ only after `ROOMSTATE`.
 MIT, see [LICENSE](LICENSE).
 
 The files in `assets/` and the button icons in `src/ui/assets/` come from Chatterino 2.5.5 and are
-used under Chatterino's MIT license: see [assets/THIRD-PARTY-NOTICES.md](assets/THIRD-PARTY-NOTICES.md)
-and [assets/CHATTERINO-LICENSE.txt](assets/CHATTERINO-LICENSE.txt).
+used under Chatterino's MIT license: see [assets/CHATTERINO-LICENSE.txt](assets/CHATTERINO-LICENSE.txt).
