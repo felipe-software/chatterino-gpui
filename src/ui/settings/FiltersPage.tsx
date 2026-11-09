@@ -2,6 +2,7 @@ import { View } from "@felipe-software/react-native-gpui";
 import type { FilterRecord } from "../../data/api";
 import { checkFilterText } from "../../data/filters/lang/filter";
 import { isValidFilter, newFilterId, QUICK_ADD_FILTER } from "../../data/filters/records";
+import { ModernFiltersPage } from "../modern/settingsPages/ModernFiltersPage";
 import { useApp } from "../state/AppContext";
 import { EditableModelView } from "./EditableModelView";
 import { FilterEditorContent } from "./FilterEditorContent";
@@ -17,11 +18,12 @@ import { useSettingsUpdate } from "./useSettingsUpdate";
 export const FILTERS_LABEL = "Selectively display messages in Splits using channel filters. Set filters under a Split menu.";
 
 export function FiltersPage() {
-    const { settings } = useApp();
+    const { settings, theme } = useApp();
     const ui = useSettingsUi();
     const { update } = useSettingsUpdate();
     const actions = useSettingsActions();
     const records = settings.filters;
+    if (theme.modern) return <ModernFiltersPage />;
 
     const showValidity = (record: FilterRecord) => {
         const result = checkFilterText(record.filter);

@@ -1,5 +1,7 @@
 import { View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { effectColor } from "../colors";
+import { MODERN_ICONS } from "../modern/icons";
+import { IconButton } from "../modern/controls/IconButton";
 import { useApp } from "../state/AppContext";
 import { HoverGlow } from "./HoverGlow";
 import { useButtonEffect } from "./useButtonEffect";
@@ -22,6 +24,21 @@ export function PlusButton({ width, height, centerX, centerY, length, color, hov
     const effect = useButtonEffect();
     const lineColor = effect.hovered ? hoverColor : color;
     const half = (length - 1) / 2;
+    if (theme.modern) {
+        return (
+            <IconButton
+                testID={testID}
+                icon={MODERN_ICONS.plus}
+                label="Add"
+                width={width}
+                height={height}
+                iconSize={Math.min(18, Math.max(14, length + 4))}
+                tone="muted"
+                onPress={() => onPress()}
+                onMouseUp={onMouseUp}
+            />
+        );
+    }
     return (
         <View
             testID={testID}

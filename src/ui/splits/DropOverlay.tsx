@@ -11,6 +11,7 @@ export function DropOverlay({ zones, pageOrigin }: Props) {
     const state = useStore(drag);
     const hovered = state ? dropZoneAt(zones, state.x - pageOrigin.x, state.y - pageOrigin.y) : undefined;
     const strips = zones.filter((zone) => zone.kind === "strip");
+    const previewShape = theme.modern ? { borderRadius: 6 } : {};
     return (
         <View testID="drop-overlay" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, zIndex: 30 }} pointerEvents="none">
             {strips.map((zone, index) => (
@@ -34,6 +35,7 @@ export function DropOverlay({ zones, pageOrigin }: Props) {
                         borderWidth: 1,
                         borderColor: theme.splits.dropPreviewBorder,
                         backgroundColor: theme.splits.dropPreview,
+                        ...previewShape,
                     }}
                 />
             ) : null}

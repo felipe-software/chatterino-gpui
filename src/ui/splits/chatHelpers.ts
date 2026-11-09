@@ -1,4 +1,4 @@
-import type { ChatListElement, ChatListMessage, ChatListProps } from "@felipe-software/react-native-gpui";
+import type { ChatListElement, ChatListMessage, ChatListProps } from "../../native/chatList";
 import { LINK_ACCOUNTS, LINK_RECONNECT, parseModerationLink } from "../../data";
 import { threadRootId } from "../../data/threads";
 import { assetPath } from "../assetPaths";
@@ -12,8 +12,10 @@ import { authorOf, canReplyTo } from "./replyTarget";
 import type { Theme } from "../theme";
 
 const OVERLAY_OPACITY = 0.4;
+const MODERN_HISTORY_OPACITY = 0.6;
 
 export function chatListProps(theme: Theme, fonts: Fonts, settings: Settings, prefs: UiPrefs): Partial<ChatListProps> {
+    const historyOpacity = theme.modern ? MODERN_HISTORY_OPACITY : OVERLAY_OPACITY;
     const props: Partial<ChatListProps> = {
         fontFamily: fonts.chatFamily,
         fontSize: fonts.chatSize,
@@ -23,7 +25,7 @@ export function chatListProps(theme: Theme, fonts: Fonts, settings: Settings, pr
         selectionColor: theme.messages.selection,
         scrollbarColor: theme.scrollbar.thumb,
         disabledOpacity: OVERLAY_OPACITY,
-        historicalOpacity: prefs.fadeMessageHistory ? OVERLAY_OPACITY : 1,
+        historicalOpacity: prefs.fadeMessageHistory ? historyOpacity : 1,
         showTimestamps: settings.showTimestamps,
         emoteScale: settings.emoteScale * uiScaleOf(settings),
         animateEmotes: settings.animateEmotes,

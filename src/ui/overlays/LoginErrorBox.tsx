@@ -1,4 +1,5 @@
 import { Text, View } from "@felipe-software/react-native-gpui";
+import { Callout } from "../modern/controls/Callout";
 import { SETTINGS_FONT_SIZE, SETTINGS_LINE_HEIGHT, SETTINGS_STYLE } from "../settings/settingsStyle";
 import { SPushButton } from "../settings/SPushButton";
 import { useApp } from "../state/AppContext";
@@ -10,6 +11,13 @@ export function LoginErrorBox({ errors, onClose }: Props) {
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const text = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE };
+    if (theme.modern) {
+        return (
+            <View style={{ paddingTop: 12, paddingHorizontal: 20 }}>
+                <Callout testID="login-error" tone="error" title="Couldn't add the account" lines={errors} onClose={onClose} />
+            </View>
+        );
+    }
     return (
         <View style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0, 0, 0, 0.35)" }}>
             <View

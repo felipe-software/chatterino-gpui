@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Text, View } from "@felipe-software/react-native-gpui";
+import { Button } from "../modern/controls/Button";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 
@@ -12,6 +13,9 @@ export function PushButton({ label, testID, disabled, primary, onPress }: Props)
     const background = hovered && !disabled ? colors.buttonHover : colors.button;
     const borderColor = primary ? colors.focusBorder : colors.buttonBorder;
     const textColor = disabled ? colors.disabledText : colors.text;
+    if (theme.modern) {
+        return <Button testID={testID} label={label} variant={primary ? "primary" : "secondary"} disabled={disabled} onPress={onPress} />;
+    }
     return (
         <View
             testID={testID}

@@ -1,5 +1,6 @@
 import { View } from "@felipe-software/react-native-gpui";
 import type { Account } from "../../data/api";
+import { ModernAccountsPage } from "../modern/settingsPages/ModernAccountsPage";
 import { useApp } from "../state/AppContext";
 import { useStore } from "../state/useStore";
 import { EditableModelView } from "./EditableModelView";
@@ -17,8 +18,9 @@ const COLUMNS: TableColumn<Row>[] = [
 ];
 
 export function AccountsPage() {
-    const { core, openOverlay } = useApp();
+    const { core, openOverlay, theme } = useApp();
     const state = useStore(core.accounts);
+    if (theme.modern) return <ModernAccountsPage />;
     const rows: Row[] = state.accounts.length > 0 ? [{ kind: "category", label: "Twitch" }, ...state.accounts.map((account): Row => ({ kind: "account", account }))] : [];
 
     const change = (next: Row[]) => {

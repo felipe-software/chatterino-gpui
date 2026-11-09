@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { EmoteInfo } from "../../data/api";
-import { layoutEmoteGrid, visibleRows } from "./emoteGridLayout";
-import { compareEmoteNames, emoteSections, searchSections } from "./emoteSections";
+import { layoutEmoteGrid, layoutTileGrid, visibleRows } from "./emoteGridLayout";
+import { compareEmoteNames, emoteSections, emoteSourceLabel, modernEmoteView, searchSections } from "./emoteSections";
 import { normalizeChannelName, stepSelection, switcherItems } from "./switcherItems";
 
 function emote(name: string, provider: EmoteInfo["provider"], scope: EmoteInfo["scope"], width = 28): EmoteInfo {
@@ -72,6 +72,43 @@ describe("emote grid layout (centered messages)", () => {
         const layout = layoutEmoteGrid([{ title: "7TV", emotes: [], empty: "no emotes available" }], metrics);
         expect(layout.rows.map((row) => row.kind)).toEqual(["title", "empty"]);
         expect(visibleRows(layout, 1000, 100, 0)).toEqual([]);
+    });
+});
+
+describe("modern emote picker", () => {
+    test("channel tab drops empty providers into a note", () => {
+        const view = modernEmoteView("Channel", emoteSections("Channel", emotes, "forsen"), "forsen", false);
+        expect(view.sections.map((section) => section.title)).toEqual(["BetterTTV · forsen", "7TV · forsen"]);
+        expect(view.note).toBe("FrankerFaceZ has no emotes in this channel.");
+        expect(view.empty).toBeUndefined();
+    });
+
+    test("empty tabs and searches become an empty state", () => {
+        expect(modernEmoteView("Subs", emoteSections("Subs", [], "forsen"), "forsen", false).empty?.title).toBe("No subscriber emotes yet");
+        const none = modernEmoteView("Channel", emoteSections("Channel", [], "forsen"), "forsen", false);
+        expect(none.empty?.description).toBe("BetterTTV, FrankerFaceZ and 7TV have no emotes in this channel.");
+        expect(modernEmoteView("Channel", [], "forsen", true, "zzz").empty?.title).toBe("No emotes found");
+    });
+
+    test("search titles say where an emote comes from", () => {
+        const view = modernEmoteView("Subs", searchSections(emotes, "a", "forsen"), "forsen", true, "a");
+        expect(view.sections.map((section) => section.title)).toEqual(["Twitch", "BetterTTV · Global", "BetterTTV · forsen", "7TV · forsen"]);
+        expect(emoteSourceLabel(emote("catJAM", "7tv", "channel"))).toBe("7TV · channel emote");
+        expect(emoteSourceLabel(emote("smile", "emoji", "global"))).toBe("Emoji");
+    });
+
+    test("tiles fill eight columns and the note follows the last section", () => {
+        const many = Array.from({ length: 10 }, (_, index) => emote(`e${index}`, "bttv", "channel"));
+        const layout = layoutTileGrid([{ title: "BetterTTV · forsen", emotes: many }], 418, "FrankerFaceZ has no emotes in this channel.");
+        const [header, first, second, note] = layout.rows;
+        expect(layout.tile).toBe(48);
+        expect(header).toMatchObject({ kind: "header", y: 14, height: 16, count: 10 });
+        expect(first.kind === "tiles" && first.items.map((item) => item.x)).toEqual([10, 60, 110, 160, 210, 260, 310, 360]);
+        expect(second).toMatchObject({ kind: "tiles", y: 84 });
+        expect(second.kind === "tiles" && second.items.map((item) => item.index)).toEqual([8, 9]);
+        expect(note).toMatchObject({ kind: "note", y: 144, height: 16 });
+        expect(layout.height).toBe(172);
+        expect(layout.emotes).toHaveLength(10);
     });
 });
 

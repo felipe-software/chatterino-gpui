@@ -142,3 +142,23 @@ export function applyHotkeyOverrides(bindings: AppCommandBinding[], overrides: H
     }
     return result;
 }
+
+const KEY_LABELS: Record<string, string> = { Return: "Enter" };
+
+export function hotkeyKeyParts(display: string): string[] {
+    if (!display) return [];
+    const parts = display.split("+").filter((part, index, list) => part !== "" || index === list.length - 1);
+    if (display.endsWith("++")) parts.splice(parts.length - 1, 1, "+");
+    return parts.map((part) => KEY_LABELS[part] ?? part);
+}
+
+export const MODERN_HOTKEY_GROUPS: Array<{ category: HotkeyCategory; title: string }> = [
+    { category: "Window", title: "Window" },
+    { category: "Split", title: "Split" },
+    { category: "Split input box", title: "Input box" },
+    { category: "Popup Windows", title: "Popups" },
+];
+
+export function hotkeyTitle(name: string): string {
+    return name.charAt(0).toUpperCase() + name.slice(1);
+}

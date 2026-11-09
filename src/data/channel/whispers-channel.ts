@@ -1,4 +1,4 @@
-import type { ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage } from "../../native/chatList";
 import type { Channel, ChannelEvent, ChannelInfo, Completion, EmoteInfo, SendResult, Settings } from "../api";
 import type { ChatMessage } from "../messages/model";
 import { renderMessage, type RenderOptions } from "../messages/render";

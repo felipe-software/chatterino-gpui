@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollView, Text, View } from "@felipe-software/react-native-gpui";
 import { FONT_FAMILIES } from "../fonts";
+import type { ModernTokens } from "../modern/tokens";
 import { useApp } from "../state/AppContext";
 import { SETTINGS_FONT_SIZE, SETTINGS_STYLE } from "./settingsStyle";
 import { SLineEdit } from "./SLineEdit";
@@ -25,16 +26,43 @@ const WEIGHTS: Array<[number, string]> = [
 const PREVIEW = "The quick brown fox jumps over the lazy dog";
 const ROW = 22;
 
+type Palette = { text: string; fontSize: number; border: string; list: string; selection: string; preview: string; previewText: string; radius: number };
+
+const CLASSIC: Palette = {
+    text: SETTINGS_STYLE.text,
+    fontSize: SETTINGS_FONT_SIZE,
+    border: SETTINGS_STYLE.tableBorder,
+    list: SETTINGS_STYLE.tableBackground,
+    selection: SETTINGS_STYLE.tableSelection,
+    preview: "#191919",
+    previewText: "#ffffff",
+    radius: 0,
+};
+
+function modernPalette(tokens: ModernTokens): Palette {
+    return {
+        text: tokens.text,
+        fontSize: 13,
+        border: tokens.lineSubtle,
+        list: tokens.bgChat,
+        selection: tokens.accentSoft,
+        preview: tokens.bgChat,
+        previewText: tokens.text,
+        radius: 6,
+    };
+}
+
 export function FontPickerContent({ initial, onApply, onClose }: Props) {
-    const { fonts } = useApp();
+    const { theme, fonts } = useApp();
     const [choice, setChoice] = useState(initial);
     const [search, setSearch] = useState("");
     const [sizeText, setSizeText] = useState(String(initial.size));
+    const palette = theme.modern ? modernPalette(theme.modern) : CLASSIC;
     const families = FONT_FAMILIES.includes(initial.family) ? FONT_FAMILIES : [initial.family, ...FONT_FAMILIES];
     const shownFamilies = families.filter((family) => family.toLowerCase().includes(search.trim().toLowerCase()));
-    const text = { color: SETTINGS_STYLE.text, fontFamily: fonts.appFamily, fontSize: SETTINGS_FONT_SIZE };
-    const listBox = { flex: 1, borderWidth: 1, borderColor: SETTINGS_STYLE.tableBorder, backgroundColor: SETTINGS_STYLE.tableBackground };
-    const row = (selected: boolean) => ({ height: ROW, justifyContent: "center" as const, paddingHorizontal: 4, backgroundColor: selected ? SETTINGS_STYLE.tableSelection : undefined });
+    const text = { color: palette.text, fontFamily: fonts.appFamily, fontSize: palette.fontSize };
+    const listBox = { flex: 1, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.list, borderRadius: palette.radius || undefined };
+    const row = (selected: boolean) => ({ height: ROW, justifyContent: "center" as const, paddingHorizontal: 4, backgroundColor: selected ? palette.selection : undefined });
 
     return (
         <View style={{ flex: 1, padding: 10, gap: 8 }}>
@@ -95,8 +123,18 @@ export function FontPickerContent({ initial, onApply, onClose }: Props) {
                 </View>
             </View>
             <Text style={text}>Preview</Text>
-            <View style={{ height: 48, justifyContent: "center", paddingHorizontal: 6, backgroundColor: "#191919", borderWidth: 1, borderColor: SETTINGS_STYLE.tableBorder }}>
-                <Text style={{ color: "#ffffff", fontFamily: choice.family, fontSize: Math.round((choice.size * 96) / 72), fontWeight: String(choice.weight) as "400" }}>{PREVIEW}</Text>
+            <View
+                style={{
+                    height: 48,
+                    justifyContent: "center",
+                    paddingHorizontal: 6,
+                    backgroundColor: palette.preview,
+                    borderWidth: 1,
+                    borderColor: palette.border,
+                    borderRadius: palette.radius || undefined,
+                }}
+            >
+                <Text style={{ color: palette.previewText, fontFamily: choice.family, fontSize: Math.round((choice.size * 96) / 72), fontWeight: String(choice.weight) as "400" }}>{PREVIEW}</Text>
             </View>
             <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 6 }}>
                 <SPushButton testID="font-apply" label="Apply" onPress={() => onApply(choice)} />

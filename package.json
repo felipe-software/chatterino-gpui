@@ -13,6 +13,10 @@
         "start": "node scripts/run.mjs",
         "start:dev": "node scripts/run.mjs --dev",
         "bundle": "node scripts/run.mjs --bundle-only",
+        "build:native": "node scripts/build-native.mjs",
+        "conformance:chat-list": "node scripts/chat-list-conformance.mjs",
+        "conformance:chat-list-window": "node scripts/chat-list-window-conformance.mjs",
+        "perf:chat-list": "node scripts/chat-list-stress.mjs",
         "test": "bun test src",
         "typecheck": "tsc --noEmit -p ."
     },

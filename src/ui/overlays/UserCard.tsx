@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Svg, Text, View, type ChatListMessage } from "@felipe-software/react-native-gpui";
+import { Image, Svg, Text, View } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage } from "../../native/chatList";
 import type { UserInfo } from "../../data/api";
 import { Checkbox } from "../common/Checkbox";
 import { CopyButton } from "../common/CopyButton";
@@ -8,6 +9,7 @@ import { FloatingWindow } from "../common/FloatingWindow";
 import { PushButton } from "../common/PushButton";
 import { accountAge, formatDate, localizeNumber } from "../format";
 import { ICONS } from "../icons";
+import { UserCardBody } from "../modern/popups/UserCardBody";
 import { useApp } from "../state/AppContext";
 import { MENTIONS_CHANNEL } from "../state/ids";
 import { useChannel } from "../state/useChannel";
@@ -18,6 +20,8 @@ type Props = { login: string; channel: string; x: number; y: number; onClose: ()
 
 const WIDTH = 418;
 const HEIGHT = 472;
+const MODERN_WIDTH = 400;
+const MODERN_HEIGHT = 700;
 const ID_COLOR = "#aaaaaa";
 const PINNED = "#a34532";
 
@@ -86,6 +90,40 @@ export function UserCard({ login, channel, x, y, onClose }: Props) {
             ...current,
             ignoredUsers: next ? [...current.ignoredUsers, lower] : current.ignoredUsers.filter((entry) => entry !== lower),
         }));
+
+    if (theme.modern) {
+        return (
+            <FloatingWindow
+                testID="user-card"
+                title={title}
+                width={MODERN_WIDTH}
+                height={MODERN_HEIGHT}
+                x={Math.round(x - MODERN_WIDTH / 3)}
+                y={Math.round(y - MODERN_HEIGHT / 5)}
+                frameless
+                onClose={onClose}
+                onBackdropPress={pinned ? undefined : onClose}
+            >
+                <UserCardBody
+                    login={lower}
+                    channel={channel}
+                    isTwitchChannel={isTwitchChannel}
+                    info={info}
+                    failed={load.state === "failed"}
+                    live={live}
+                    source={source}
+                    messages={messages}
+                    subscribe={subscribe}
+                    pinned={pinned}
+                    blocked={blocked}
+                    loggedIn={loggedIn}
+                    onPin={() => setPinned(!pinned)}
+                    onBlock={toggleBlock}
+                    onClose={onClose}
+                />
+            </FloatingWindow>
+        );
+    }
 
     const separator = (
         <View style={{ height: 8, justifyContent: "center" }}>

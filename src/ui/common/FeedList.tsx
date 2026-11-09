@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChatList, type ChatListHandle, type ChatListHoverEvent, type ChatListMessage, type ChatListPressEvent } from "@felipe-software/react-native-gpui";
+import { ChatList, type ChatListHandle, type ChatListHoverEvent, type ChatListMessage, type ChatListPressEvent } from "../../native/chatList";
 import { chatListProps } from "../splits/chatHelpers";
 import { useApp } from "../state/AppContext";
 

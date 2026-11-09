@@ -1,5 +1,6 @@
 import { Svg, Text, View } from "@felipe-software/react-native-gpui";
 import { ICONS } from "../icons";
+import { Checkbox as ModernCheckbox } from "../modern/controls/Checkbox";
 import { useApp } from "../state/AppContext";
 import { MENU_COLORS, chromeColors } from "../theme";
 
@@ -9,6 +10,9 @@ export function Checkbox({ label, checked, testID, disabled, onChange }: Props) 
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const textColor = disabled ? colors.disabledText : colors.text;
+    if (theme.modern) {
+        return <ModernCheckbox testID={testID} label={label} checked={checked} disabled={disabled} onChange={onChange} />;
+    }
     return (
         <View
             testID={testID}

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ChatListElement } from "@felipe-software/react-native-gpui";
+import type { ChatListElement } from "../../native/chatList";
 import { buildNotice } from "../messages/notice";
 import { irc, testChannel, texts } from "./helpers";
 import { LINES, RECORDED } from "./fixtures/lines";

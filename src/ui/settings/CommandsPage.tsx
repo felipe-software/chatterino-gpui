@@ -1,6 +1,7 @@
 import { View } from "@felipe-software/react-native-gpui";
 import type { CustomCommand } from "../../data/api";
 import { duplicateTriggers } from "../../data/twitch/custom-commands";
+import { ModernCommandsPage } from "../modern/settingsPages/ModernCommandsPage";
 import { useApp } from "../state/AppContext";
 import { EditableModelView } from "./EditableModelView";
 import { RichText } from "./RichText";
@@ -14,9 +15,10 @@ export const COMMANDS_HELP = "{1} => first word     {1+} => first word and after
 const DUPLICATE_WARNING = "Multiple commands with the same trigger found. Only one of the commands will work.";
 
 export function CommandsPage() {
-    const { settings, openUrl } = useApp();
+    const { settings, openUrl, theme } = useApp();
     const { query } = useSettingsUi();
     const { update } = useSettingsUpdate();
+    if (theme.modern) return <ModernCommandsPage />;
     const duplicates = duplicateTriggers(settings.commands);
     const columns: TableColumn<CustomCommand>[] = [
         {

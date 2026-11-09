@@ -1,4 +1,4 @@
-import type { ChatListMessage, ChatListPressEvent } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage, ChatListPressEvent } from "../../native/chatList";
 import type { MenuEntry } from "../state/overlays";
 
 export type ImageLink = { label: string; url: string };

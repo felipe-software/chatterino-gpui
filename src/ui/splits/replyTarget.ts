@@ -1,4 +1,4 @@
-import type { ChatListElement, ChatListMessage, ChatListUserElement } from "@felipe-software/react-native-gpui";
+import type { ChatListElement, ChatListMessage, ChatListUserElement } from "../../native/chatList";
 import type { Channel } from "../../data/api";
 import { threadRootId } from "../../data/threads";
 

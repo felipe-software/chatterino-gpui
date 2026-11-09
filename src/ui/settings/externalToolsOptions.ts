@@ -1,3 +1,4 @@
+import type { ModernItemRowSpec, ModernSection } from "../modern/settings/modernGeneralPages";
 import { check, choice, description, intInput, lineEdit, options, title } from "./generalHelpers";
 import type { GeneralItem, SettingsAccess } from "./generalTypes";
 
@@ -104,3 +105,80 @@ export function externalToolsItems(spawnAvailable: boolean): GeneralItem[] {
         }),
     ];
 }
+
+export type ModernToolSection = { section: ModernSection; links: Array<{ label: string; url: string }> };
+
+function toolRow(id: string, label: string, extra: Omit<ModernItemRowSpec, "kind" | "id" | "label"> = {}): ModernItemRowSpec {
+    return { kind: "item", id, label, ...extra };
+}
+
+export const MODERN_EXTERNAL_TOOLS: ModernToolSection[] = [
+    {
+        section: {
+            title: "Streamlink",
+            description: "Opens streams in a video player like VLC. Edit its config file before first use.",
+            blocks: [
+                {
+                    kind: "rows",
+                    rows: [
+                        toolRow("streamlinkUseCustomPath", "Use a custom install path", { hint: "The executable must be called streamlink" }),
+                        toolRow("streamlinkPath", "Streamlink folder", { placeholder: "Folder that holds the executable", wide: true }),
+                        toolRow("streamlinkQuality", "Preferred quality", { relabel: { choose: "Ask each time" } }),
+                        toolRow("streamlinkOptions", "Extra options", { placeholder: "--player-args …", wide: true }),
+                    ],
+                },
+            ],
+        },
+        links: [
+            { label: "Website", url: "https://streamlink.github.io/" },
+            { label: "Download", url: "https://github.com/streamlink/streamlink/releases/latest" },
+            { label: "Docs", url: "https://streamlink.github.io/cli.html#twitch" },
+        ],
+    },
+    {
+        section: {
+            title: "Custom stream player",
+            description:
+                "Any player with Twitch support and its own link scheme, like IINA on macOS or PotPlayer on Windows. Adds Open in custom player to the split header menu.",
+            blocks: [{ kind: "rows", rows: [toolRow("customURIScheme", "Player link scheme", { placeholder: "custom-player-scheme://", wide: true })] }],
+        },
+        links: [],
+    },
+    {
+        section: {
+            title: "Image uploader",
+            description: "Paste an image into the input to upload it to your own host. ShareX .sxcu settings work too.",
+            blocks: [
+                {
+                    kind: "rows",
+                    rows: [
+                        toolRow("imageUploaderEnabled", "Upload pasted images"),
+                        toolRow("askOnImageUpload", "Ask before each upload"),
+                        toolRow("imageUploaderUrl", "Request URL", { placeholder: "https://your-host.example/upload", wide: true }),
+                        toolRow("imageUploaderFormField", "Form field", { placeholder: "file" }),
+                        toolRow("imageUploaderHeaders", "Extra headers", { placeholder: "Authorization: …", wide: true }),
+                        toolRow("imageUploaderLink", "Image link", { hint: "Where to find the link in the response", placeholder: "{link}" }),
+                        toolRow("imageUploaderDeletionLink", "Deletion link", { placeholder: "{delete}" }),
+                        toolRow("uploader-buttons", "Settings", {
+                            buttonLabels: { "uploader-import": "Import from clipboard", "uploader-export": "Export to clipboard" },
+                        }),
+                    ],
+                },
+            ],
+        },
+        links: [{ label: "Setup guide", url: "https://chatterino.com/help/image-uploader" }],
+    },
+    {
+        section: {
+            title: "Spell checker",
+            description: "Experimental. Uses Hunspell dictionaries, a .aff and .dic pair, that you add to the dictionaries folder.",
+            blocks: [
+                {
+                    kind: "rows",
+                    rows: [toolRow("enableSpellChecking", "Check spelling by default"), toolRow("nSpellCheckingSuggestions", "Suggestions in the context menu")],
+                },
+            ],
+        },
+        links: [],
+    },
+];

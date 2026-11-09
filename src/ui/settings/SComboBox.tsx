@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Svg, Text, View, type MouseResponderEvent } from "@felipe-software/react-native-gpui";
 import { ICONS } from "../icons";
+import { Select } from "../modern/controls/Select";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 import { matchesQuery, useSettingsUi, type ListOption } from "./SettingsContext";
@@ -23,10 +24,19 @@ type Props = {
 const CHAR_WIDTH = 8;
 const MIN_WIDTH = 120;
 const ARROW_SPACE = 34;
+const MODERN_CHAR_WIDTH = 7;
+const MODERN_MIN_WIDTH = 160;
+const MODERN_CHROME = 48;
 
 export function comboWidth(options: ListOption[]): number {
     const longest = options.reduce((max, option) => Math.max(max, option.label.length), 0);
     return Math.max(MIN_WIDTH, Math.round(longest * CHAR_WIDTH + ARROW_SPACE));
+}
+
+export function modernComboWidth(options: ListOption[], placeholder?: string): number {
+    const labels = placeholder ? [...options.map((option) => option.label), placeholder] : options.map((option) => option.label);
+    const longest = labels.reduce((max, label) => Math.max(max, label.length), 0);
+    return Math.max(MODERN_MIN_WIDTH, Math.ceil(longest * MODERN_CHAR_WIDTH + MODERN_CHROME));
 }
 
 export function SComboBox({ testID, value, options, width, grow, placeholder, tooltip, disabled, greyable = true, onChange }: Props) {
@@ -36,6 +46,25 @@ export function SComboBox({ testID, value, options, width, grow, placeholder, to
     const hover = useSettingsTooltip(tooltip);
     const [hovered, setHovered] = useState(false);
     const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+
+    if (theme.modern) {
+        const selectWidth = grow ? undefined : Math.max(width ?? 0, modernComboWidth(options, placeholder));
+        return (
+            <View style={{ flexGrow: grow ? 1 : 0, flexShrink: grow ? 1 : 0 }} {...hover}>
+                <Select
+                    testID={testID}
+                    value={value}
+                    options={options}
+                    width={selectWidth}
+                    grow={grow}
+                    disabled={disabled}
+                    placeholder={placeholder}
+                    onChange={onChange}
+                />
+            </View>
+        );
+    }
+
     const current = options.find((option) => option.value === value);
     const label = current?.label ?? placeholder ?? "";
     const greyed = greyable && !matchesQuery(ui.query, ...options.map((option) => option.label));

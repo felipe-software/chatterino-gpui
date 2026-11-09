@@ -14,8 +14,12 @@ import {
 type BoolKey = { [K in keyof Settings]-?: Settings[K] extends boolean ? K : never }[keyof Settings];
 type StringKey = { [K in keyof Settings]-?: Settings[K] extends string ? K : never }[keyof Settings];
 
+export type HighlightTone = "mention" | "first" | "sub" | "warn" | "info";
+
 export type BuiltinRow = {
     label: string;
+    modernLabel: string;
+    tone: HighlightTone;
     enabled: BoolKey;
     mentions?: BoolKey;
     taskbar?: BoolKey;
@@ -28,6 +32,8 @@ export type BuiltinRow = {
 export const MESSAGE_BUILTINS: BuiltinRow[] = [
     {
         label: "Your username (automatic)",
+        modernLabel: "Your username",
+        tone: "mention",
         enabled: "highlightSelfMentions",
         mentions: "showSelfHighlightInMentions",
         taskbar: "enableSelfHighlightTaskbar",
@@ -38,6 +44,8 @@ export const MESSAGE_BUILTINS: BuiltinRow[] = [
     },
     {
         label: "Whispers",
+        modernLabel: "Whispers",
+        tone: "mention",
         enabled: "enableWhisperHighlight",
         taskbar: "enableWhisperHighlightTaskbar",
         sound: "enableWhisperHighlightSound",
@@ -47,6 +55,8 @@ export const MESSAGE_BUILTINS: BuiltinRow[] = [
     },
     {
         label: "Subscriptions",
+        modernLabel: "Subscriptions",
+        tone: "sub",
         enabled: "enableSubHighlight",
         taskbar: "enableSubHighlightTaskbar",
         sound: "enableSubHighlightSound",
@@ -54,11 +64,34 @@ export const MESSAGE_BUILTINS: BuiltinRow[] = [
         color: "subHighlightColor",
         fallbackColor: COLOR_SUBSCRIPTION,
     },
-    { label: "Highlights redeemed with Channel Points", enabled: "enableRedeemedHighlight", color: "redeemedHighlightColor", fallbackColor: COLOR_REDEEMED },
-    { label: "First Messages", enabled: "enableFirstMessageHighlight", color: "firstMessageHighlightColor", fallbackColor: COLOR_FIRST_MESSAGE },
-    { label: "Hype Chats", enabled: "enableElevatedMessageHighlight", color: "elevatedMessageHighlightColor", fallbackColor: COLOR_ELEVATED },
+    {
+        label: "Highlights redeemed with Channel Points",
+        modernLabel: "Channel point highlights",
+        tone: "info",
+        enabled: "enableRedeemedHighlight",
+        color: "redeemedHighlightColor",
+        fallbackColor: COLOR_REDEEMED,
+    },
+    {
+        label: "First Messages",
+        modernLabel: "First messages",
+        tone: "first",
+        enabled: "enableFirstMessageHighlight",
+        color: "firstMessageHighlightColor",
+        fallbackColor: COLOR_FIRST_MESSAGE,
+    },
+    {
+        label: "Hype Chats",
+        modernLabel: "Hype chats",
+        tone: "warn",
+        enabled: "enableElevatedMessageHighlight",
+        color: "elevatedMessageHighlightColor",
+        fallbackColor: COLOR_ELEVATED,
+    },
     {
         label: "Subscribed Reply Threads",
+        modernLabel: "Reply threads you follow",
+        tone: "mention",
         enabled: "enableThreadHighlight",
         mentions: "showThreadHighlightInMentions",
         taskbar: "enableThreadHighlightTaskbar",
@@ -69,6 +102,8 @@ export const MESSAGE_BUILTINS: BuiltinRow[] = [
     },
     {
         label: "AutoMod Caught Messages",
+        modernLabel: "Held by AutoMod",
+        tone: "warn",
         enabled: "enableAutomodHighlight",
         mentions: "showAutomodInMentions",
         taskbar: "enableAutomodHighlightTaskbar",
@@ -77,12 +112,21 @@ export const MESSAGE_BUILTINS: BuiltinRow[] = [
         color: "automodHighlightColor",
         fallbackColor: COLOR_AUTOMOD,
     },
-    { label: "Watch Streaks", enabled: "enableWatchStreakHighlight", color: "watchStreakHighlightColor", fallbackColor: COLOR_WATCH_STREAK },
+    {
+        label: "Watch Streaks",
+        modernLabel: "Watch streaks",
+        tone: "info",
+        enabled: "enableWatchStreakHighlight",
+        color: "watchStreakHighlightColor",
+        fallbackColor: COLOR_WATCH_STREAK,
+    },
 ];
 
 export const USER_BUILTINS: BuiltinRow[] = [
     {
         label: "Your messages (automatic)",
+        modernLabel: "Your own messages",
+        tone: "info",
         enabled: "enableSelfMessageHighlight",
         mentions: "showSelfMessageHighlightInMentions",
         color: "selfMessageHighlightColor",

@@ -18,7 +18,7 @@ import { OverlayWindowContext, overlayWindowFor } from "./overlayWindows";
 function renderOverlay(overlay: Overlay, close: () => void) {
     switch (overlay.kind) {
         case "menu":
-            return <PopupMenu entries={overlay.entries} x={overlay.x} y={overlay.y} alignRight={overlay.alignRight} onClose={close} />;
+            return <PopupMenu entries={overlay.entries} x={overlay.x} y={overlay.y} alignRight={overlay.alignRight} minWidth={overlay.minWidth} onClose={close} />;
         case "confirm":
             return (
                 <ConfirmDialog

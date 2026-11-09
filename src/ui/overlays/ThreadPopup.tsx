@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, useWindowDimensions, type ChatListMessage, type ChatListPressEvent } from "@felipe-software/react-native-gpui";
+import { View, useWindowDimensions } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage, ChatListPressEvent } from "../../native/chatList";
 import { threadFeed } from "../../data/threads";
 import { Checkbox } from "../common/Checkbox";
 import { FeedList } from "../common/FeedList";
 import { FloatingWindow } from "../common/FloatingWindow";
+import { Checkbox as ModernCheckbox } from "../modern/controls/Checkbox";
+import { useRecoloredFeed } from "../modern/popups/useRecoloredFeed";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { useChannel } from "../state/useChannel";
@@ -24,6 +27,9 @@ const WIDTH = 402;
 const HEIGHT = 260;
 const OFFSET_X = 150;
 const OFFSET_Y = 70;
+const MODERN_WIDTH = 440;
+const MODERN_HEIGHT = 460;
+const LIST_INSET = 6;
 
 export function ThreadPopup({ channel, rootId, x, y, onClose }: Props) {
     const services = useApp();
@@ -44,6 +50,8 @@ export function ThreadPopup({ channel, rootId, x, y, onClose }: Props) {
     const focusKey = `thread:${rootId}`;
     const showSubscribe = settings.enableThreadHighlight ?? true;
     const placeholder = accounts.current ? `Reply as ${accounts.current}...` : "Log in to send messages...";
+    const tokens = services.theme.modern;
+    const feedView = useRecoloredFeed(messages, subscribe);
 
     useEffect(() => {
         setSubscribed(!!threads?.isThreadSubscribed?.(rootId));
@@ -86,6 +94,33 @@ export function ThreadPopup({ channel, rootId, x, y, onClose }: Props) {
 
     const left = x === undefined ? undefined : Math.max(0, Math.min(x - OFFSET_X, screen.width - WIDTH));
     const top = y === undefined ? undefined : Math.max(0, Math.min(y - OFFSET_Y, screen.height - HEIGHT));
+
+    if (tokens) {
+        const modernTitle = rootAuthor ? `Reply thread · @${rootAuthor.login} in #${channel}` : "Reply thread";
+        return (
+            <FloatingWindow testID="thread-popup" title={modernTitle} width={MODERN_WIDTH} height={MODERN_HEIGHT} x={left} y={top} onClose={onClose}>
+                <View style={{ flex: 1 }}>
+                    {showSubscribe ? (
+                        <View style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: tokens.lineSubtle }}>
+                            <ModernCheckbox testID="thread-subscribe" label="Subscribe to thread" checked={subscribed} onChange={toggleSubscribed} />
+                        </View>
+                    ) : null}
+                    <View style={{ flex: 1, minHeight: 100, paddingLeft: LIST_INSET, backgroundColor: tokens.bgChat }}>
+                        <FeedList testID="thread-messages" messages={feedView.messages} subscribe={feedView.subscribe} onPress={press} />
+                    </View>
+                    <SplitInput
+                        ref={input}
+                        splitId={focusKey}
+                        channel={source}
+                        channelName={channel}
+                        focusKey={focusKey}
+                        fixedReply={target}
+                        placeholder={placeholder}
+                    />
+                </View>
+            </FloatingWindow>
+        );
+    }
 
     return (
         <FloatingWindow testID="thread-popup" title={title} width={WIDTH} height={HEIGHT} x={left} y={top} onClose={onClose}>

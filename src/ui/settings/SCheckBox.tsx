@@ -1,7 +1,8 @@
 import { Svg, Text, View } from "@felipe-software/react-native-gpui";
 import { ICONS } from "../icons";
+import { Checkbox } from "../modern/controls/Checkbox";
 import { useApp } from "../state/AppContext";
-import { MENU_COLORS } from "../theme";
+import { menuColors } from "../theme";
 import { matchesQuery, useSettingsUi } from "./SettingsContext";
 import { SETTINGS_FONT_SIZE, SETTINGS_STYLE } from "./settingsStyle";
 import { useSettingsTooltip } from "./useSettingsTooltip";
@@ -17,12 +18,22 @@ type Props = {
 };
 
 export function SCheckBox({ label, checked, testID, tooltip, disabled, greyable = true, onChange }: Props) {
-    const { fonts } = useApp();
+    const { theme, fonts } = useApp();
     const { query } = useSettingsUi();
     const hover = useSettingsTooltip(tooltip);
+
+    if (theme.modern) {
+        return (
+            <View style={{ alignSelf: "flex-start" }} {...hover}>
+                <Checkbox testID={testID} label={label} checked={checked} disabled={disabled} onChange={onChange} />
+            </View>
+        );
+    }
+
+    const colors = menuColors(theme);
     const greyed = greyable && !matchesQuery(query, label);
     const textColor = disabled ? SETTINGS_STYLE.disabledText : SETTINGS_STYLE.text;
-    const markColor = disabled ? SETTINGS_STYLE.disabledText : MENU_COLORS.checkMark;
+    const markColor = disabled ? SETTINGS_STYLE.disabledText : colors.checkMark;
     return (
         <View
             testID={testID}
@@ -38,9 +49,9 @@ export function SCheckBox({ label, checked, testID, tooltip, disabled, greyable 
                     width: 14,
                     height: 14,
                     borderWidth: 1,
-                    borderColor: MENU_COLORS.checkBorder,
+                    borderColor: colors.checkBorder,
                     borderRadius: 2,
-                    backgroundColor: MENU_COLORS.checkFill,
+                    backgroundColor: colors.checkFill,
                     alignItems: "center",
                     justifyContent: "center",
                 }}

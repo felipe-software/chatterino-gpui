@@ -1,5 +1,6 @@
 import { Platform } from "@felipe-software/react-native-gpui";
-import type { Settings } from "../data/api";
+import type { Settings, UiStyle } from "../data/api";
+import { MODERN_FONT } from "./modern/tokens";
 import { scaledPoints, uiScaleOf } from "./zoom";
 
 export type Fonts = {
@@ -25,7 +26,23 @@ function platformFonts(): PlatformFonts {
     return LINUX;
 }
 
-export function fontsFor(settings: Pick<Settings, "fontFamily" | "fontSize"> & { uiScale?: number }): Fonts {
+const MODERN_CHAT_PIXELS = 14;
+const MODERN_UI_PIXELS = 13;
+
+function modernFonts(scale: number): Fonts {
+    const chatSize = Math.round(MODERN_CHAT_PIXELS * scale * 100) / 100;
+    return {
+        chatFamily: MODERN_FONT,
+        chatSize,
+        uiFamily: MODERN_FONT,
+        uiSize: MODERN_UI_PIXELS,
+        appFamily: MODERN_FONT,
+        appSize: MODERN_UI_PIXELS,
+    };
+}
+
+export function fontsFor(settings: Pick<Settings, "fontFamily" | "fontSize"> & { uiScale?: number; uiStyle?: UiStyle }): Fonts {
+    if (settings.uiStyle === "modern") return modernFonts(uiScaleOf(settings));
     const platform = platformFonts();
     const points = scaledPoints(settings.fontSize, uiScaleOf(settings));
     const chatSize = Math.round(points * platform.pointsToPixels * 100) / 100;

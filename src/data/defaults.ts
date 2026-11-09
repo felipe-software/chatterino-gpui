@@ -23,6 +23,8 @@ export const DEFAULT_TIMEOUT_BUTTONS: TimeoutButton[] = [
 
 export function defaultExtendedSettings(): ExtendedSettings {
     return {
+        uiStyle: "chatterino",
+        accentColor: "sky",
         systemTheme: false,
         darkSystemTheme: "dark",
         lightSystemTheme: "light",

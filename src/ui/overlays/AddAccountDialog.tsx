@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { View } from "@felipe-software/react-native-gpui";
 import type { LoginCredentials } from "../../data/api";
 import { FloatingWindow } from "../common/FloatingWindow";
+import { DIALOG_HEADER_HEIGHT } from "../modern/controls/DialogHeader";
+import { SegmentedControl } from "../modern/controls/SegmentedControl";
 import { SETTINGS_STYLE } from "../settings/settingsStyle";
 import { SPushButton } from "../settings/SPushButton";
 import { TabWidget } from "../settings/TabWidget";
@@ -12,6 +14,12 @@ import { LoginBasicTab } from "./LoginBasicTab";
 import { LoginErrorBox } from "./LoginErrorBox";
 
 const TABS = ["Basic", "Advanced"];
+const MODES = [
+    { value: "Basic", label: "Browser" },
+    { value: "Advanced", label: "Manual" },
+];
+const MODERN_WIDTH = 440;
+const MODERN_HEIGHT = 560 - DIALOG_HEADER_HEIGHT;
 
 export function AddAccountDialog({ onClose }: { onClose: () => void }) {
     const services = useApp();
@@ -27,6 +35,22 @@ export function AddAccountDialog({ onClose }: { onClose: () => void }) {
         }
         if (closeOnSuccess) onClose();
     };
+
+    if (services.theme.modern) {
+        return (
+            <FloatingWindow testID="add-account-dialog" title="Add an account" width={MODERN_WIDTH} height={MODERN_HEIGHT} modal onClose={onClose}>
+                <View style={{ paddingTop: 16, paddingHorizontal: 20, paddingBottom: 4 }}>
+                    <SegmentedControl testID="login-tabs" options={MODES} value={tab} onChange={setTab} grow />
+                </View>
+                {errors ? <LoginErrorBox errors={errors} onClose={() => setErrors(null)} /> : null}
+                {tab === "Basic" ? (
+                    <LoginBasicTab onCredentials={(credentials) => submit(credentials, true)} />
+                ) : (
+                    <LoginAdvancedTab onCredentials={(credentials) => submit(credentials, false)} />
+                )}
+            </FloatingWindow>
+        );
+    }
 
     return (
         <AppContext.Provider value={darkServices}>

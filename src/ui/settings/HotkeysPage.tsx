@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Text, View } from "@felipe-software/react-native-gpui";
 import type { HotkeyOverride } from "../../data/api";
 import { HOTKEYS } from "../hotkeys";
+import { ModernHotkeysPage } from "../modern/settingsPages/ModernHotkeysPage";
 import { useApp } from "../state/AppContext";
 import { EditableModelView } from "./EditableModelView";
 import { HotkeyEditContent } from "./HotkeyEditContent";
@@ -28,11 +29,12 @@ function normalizeKey(text: string): string {
 }
 
 export function HotkeysPage() {
-    const { settings, fonts } = useApp();
+    const { settings, fonts, theme } = useApp();
     const ui = useSettingsUi();
     const { update } = useSettingsUpdate();
     const actions = useSettingsActions();
     const [keyQuery, setKeyQuery] = useState("");
+    if (theme.modern) return <ModernHotkeysPage />;
     const overrides = settings.hotkeyOverrides;
     const entries = resolveHotkeys(overrides);
     const needle = ui.query.trim().toLowerCase();

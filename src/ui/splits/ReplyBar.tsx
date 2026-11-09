@@ -1,6 +1,7 @@
 import { Text, View } from "@felipe-software/react-native-gpui";
 import { themedAsset } from "../assetPaths";
 import { IconButton } from "../common/IconButton";
+import { ModernReplyBar } from "../modern/splits/ModernReplyBar";
 import { useApp } from "../state/AppContext";
 import type { ReplyTarget } from "./replyTarget";
 
@@ -10,6 +11,7 @@ const LABEL_HEIGHT = 18;
 
 export function ReplyBar({ splitId, target, onCancel }: Props) {
     const { theme, fonts } = useApp();
+    if (theme.modern) return <ModernReplyBar splitId={splitId} target={target} onCancel={onCancel} />;
     const labelColor = theme.isLight ? "#333333" : "#cccccc";
     const previewSize = Math.round(fonts.chatSize * 0.8 * 100) / 100;
     return (

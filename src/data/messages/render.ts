@@ -1,4 +1,4 @@
-import type { ChatListElement, ChatListMessage } from "@felipe-software/react-native-gpui";
+import type { ChatListElement, ChatListMessage } from "../../native/chatList";
 import type { Settings, ThemeName } from "../api";
 import { emojiUrl } from "../emotes/emoji";
 import type { Emote } from "../emotes/types";

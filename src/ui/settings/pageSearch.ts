@@ -1,4 +1,8 @@
 import type { Settings } from "../../data/api";
+import { MODERN_GENERAL } from "../modern/settings/modernGeneralPages";
+import { indexItems } from "../modern/settings/modernRows";
+import { modernGeneralPageMatches } from "../modern/settings/modernSearch";
+import { isModernGeneralPage, type ModernPageName } from "../modern/settings/modernSettingsPages";
 import { DEFAULT_HOTKEYS } from "./hotkeyCatalog";
 import { externalToolsItems } from "./externalToolsOptions";
 import { filterGeneral } from "./generalFilter";
@@ -20,6 +24,7 @@ function anyMatch(texts: Array<string | undefined>, needle: string): boolean {
 }
 
 const GENERAL_ITEMS = generalItems();
+const GENERAL_INDEX = indexItems(GENERAL_ITEMS);
 
 export function pageMatches(page: SettingsPageName, query: string, settings: Settings): boolean {
     const needle = query.trim().toLowerCase();
@@ -54,4 +59,10 @@ export function pageMatches(page: SettingsPageName, query: string, settings: Set
         default:
             return false;
     }
+}
+
+export function modernPageMatches(page: ModernPageName, query: string, settings: Settings): boolean {
+    if (!query.trim()) return true;
+    if (isModernGeneralPage(page)) return modernGeneralPageMatches(MODERN_GENERAL[page], GENERAL_INDEX, query);
+    return pageMatches(page, query, settings);
 }

@@ -5,19 +5,24 @@ import { emojiShortCodes } from "../../data/emotes/emoji";
 import { providerLabel } from "../input/completion";
 import { FloatingWindow } from "../common/FloatingWindow";
 import { TextField } from "../common/TextField";
+import { CONTROL_ICONS } from "../modern/controls/icons";
+import { TextField as ModernTextField } from "../modern/controls/TextField";
+import { EmotePicker } from "../modern/popups/EmotePicker";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { popupKeys } from "../state/popupKeys";
 import { useChannel } from "../state/useChannel";
 import { NotebookTab } from "../window/NotebookTab";
 import { EmoteGrid } from "./EmoteGrid";
-import { EMOTE_TABS, emoteSections, searchSections, type EmoteTab } from "./emoteSections";
+import { EMOTE_TABS, emoteSections, modernEmoteView, searchSections, type EmoteTab } from "./emoteSections";
 
 type Props = { splitId: string; channel: string; onClose: () => void };
 
 const WIDTH = 300;
 const HEIGHT = 500;
 const TITLE_BAR = 28;
+const MODERN_WIDTH = 420;
+const MODERN_HEIGHT = 600;
 const SEARCH_KEY = "field:emote-search";
 const REFRESH_MS = 1000;
 
@@ -60,6 +65,11 @@ export function EmotePopup({ splitId, channel, onClose }: Props) {
         [searching, emotes, query, channel, tab, isTwitchChannel, shortCodes],
     );
     const tooltipText = (emote: EmoteInfo) => (emote.provider === "emoji" ? `:${shortCodeOf(emote)}:\nEmoji` : `${emote.name}\n${providerLabel(emote)}`);
+    const tokens = theme.modern;
+    const modernView = useMemo(
+        () => (tokens ? modernEmoteView(tab, sections, channel, searching, query) : undefined),
+        [tokens, tab, sections, channel, searching, query],
+    );
 
     useEffect(
         () =>
@@ -83,6 +93,46 @@ export function EmotePopup({ splitId, channel, onClose }: Props) {
         hideTooltip(tooltipOwner);
         onClose();
     };
+
+    if (modernView) {
+        const pick = (emote: EmoteInfo, keepOpen: boolean) => {
+            insert(emote);
+            if (!keepOpen) close();
+        };
+        const header = (
+            <ModernTextField
+                ref={search}
+                testID="emote-search"
+                value={query}
+                placeholder="Search all emotes"
+                leadingIcon={CONTROL_ICONS.search}
+                autoFocus
+                onChange={(value) => setQuery(value.replace(/\s/g, ""))}
+            />
+        );
+        return (
+            <FloatingWindow
+                testID="emote-popup"
+                title={`Emotes in #${channel}`}
+                width={MODERN_WIDTH}
+                height={MODERN_HEIGHT}
+                x={0}
+                y={0}
+                header={header}
+                onClose={close}
+            >
+                <EmotePicker
+                    tab={tab}
+                    searching={searching}
+                    view={modernView}
+                    gridKey={searching ? "search" : tab}
+                    nameOf={(emote) => (emote.provider === "emoji" ? `:${shortCodeOf(emote)}:` : emote.name)}
+                    onTab={setTab}
+                    onPick={pick}
+                />
+            </FloatingWindow>
+        );
+    }
 
     return (
         <FloatingWindow testID="emote-popup" title={`Emotes in #${channel}`} width={WIDTH} height={HEIGHT + TITLE_BAR} x={0} y={0} onClose={close}>

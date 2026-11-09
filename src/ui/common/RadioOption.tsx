@@ -1,4 +1,5 @@
 import { Text, View } from "@felipe-software/react-native-gpui";
+import { Radio } from "../modern/controls/Radio";
 import { useApp } from "../state/AppContext";
 import { MENU_COLORS, chromeColors } from "../theme";
 
@@ -8,6 +9,9 @@ export function RadioOption({ label, selected, testID, disabled, onSelect }: Pro
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const textColor = disabled ? colors.disabledText : colors.text;
+    if (theme.modern) {
+        return <Radio testID={testID} label={label} selected={selected} disabled={disabled} onSelect={onSelect} />;
+    }
     return (
         <View
             testID={testID}

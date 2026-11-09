@@ -1,4 +1,4 @@
-import type { ChatListElement } from "@felipe-software/react-native-gpui";
+import type { ChatListElement } from "../../native/chatList";
 import type { ModerationAction } from "../api";
 import { assetPath } from "../assets";
 

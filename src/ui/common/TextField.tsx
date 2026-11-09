@@ -1,5 +1,6 @@
 import { forwardRef, useState } from "react";
 import { TextInput, View, type TextInputHandle } from "@felipe-software/react-native-gpui";
+import { TextField as ModernTextField } from "../modern/controls/TextField";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { chromeColors } from "../theme";
@@ -25,6 +26,22 @@ export const TextField = forwardRef<TextInputHandle, Props>(function TextField(
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const [focused, setFocused] = useState(false);
+    if (theme.modern) {
+        return (
+            <ModernTextField
+                ref={ref}
+                testID={testID}
+                value={value}
+                placeholder={placeholder}
+                secure={secure}
+                autoFocus={autoFocus}
+                width={width}
+                grow={grow}
+                onChange={onChange}
+                onSubmit={onSubmit}
+            />
+        );
+    }
     return (
         <View
             style={{

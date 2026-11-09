@@ -118,6 +118,8 @@ function sanitizeList<T>(value: unknown, sanitize: (entry: unknown) => T | undef
 }
 
 const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
+    uiStyle: ["chatterino", "modern"],
+    accentColor: ["sky", "teal", "indigo", "pink", "orange", "lime"],
     darkSystemTheme: THEMES,
     lightSystemTheme: THEMES,
     tabDirection: ["top", "left", "right", "bottom"],

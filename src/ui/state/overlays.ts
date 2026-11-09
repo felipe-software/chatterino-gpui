@@ -6,7 +6,7 @@ export type MenuEntry =
     | { kind: "submenu"; label: string; entries: MenuEntry[] };
 
 export type OverlaySpec =
-    | { kind: "menu"; x: number; y: number; entries: MenuEntry[]; alignRight?: boolean }
+    | { kind: "menu"; x: number; y: number; entries: MenuEntry[]; alignRight?: boolean; minWidth?: number }
     | { kind: "settings"; page?: string }
     | { kind: "selectChannel"; splitId: string; isNew: boolean }
     | { kind: "userCard"; login: string; channel: string; x: number; y: number }

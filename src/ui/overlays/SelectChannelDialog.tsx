@@ -7,6 +7,8 @@ import { RadioOption } from "../common/RadioOption";
 import { TextField } from "../common/TextField";
 import { tabOfSplit } from "../layout/tabs";
 import { findNode } from "../layout/tree";
+import { DIALOG_HEADER_HEIGHT } from "../modern/controls/DialogHeader";
+import { ChannelPicker } from "../modern/popups/ChannelPicker";
 import { useApp } from "../state/AppContext";
 import { SPECIAL_CHANNELS, specialKindOf, supportsSpecial, type SpecialKind } from "../state/specialChannels";
 import { chromeColors } from "../theme";
@@ -29,6 +31,9 @@ const OPTIONS: Option[] = [
 const WIDTH = 300;
 const HEIGHT = 259;
 const TITLE_BAR = 28;
+const MODERN_WIDTH = 440;
+const MODERN_HEIGHT = 560 - DIALOG_HEADER_HEIGHT;
+const MODERN_TITLE = "Open in this split";
 
 function currentChannel(layout: WindowLayout, splitId: string): string {
     const tab = tabOfSplit(layout, splitId);
@@ -56,6 +61,22 @@ export function SelectChannelDialog({ splitId, isNew, onClose }: Props) {
         onClose();
         actions.changeChannel(splitId, channel);
     };
+
+    if (theme.modern) {
+        return (
+            <FloatingWindow testID="select-channel-dialog" title={MODERN_TITLE} width={MODERN_WIDTH} height={MODERN_HEIGHT} modal onClose={cancel}>
+                <ChannelPicker
+                    choice={choice}
+                    name={name}
+                    isSupported={supported}
+                    onChoose={setChoice}
+                    onName={setName}
+                    onAccept={accept}
+                    onCancel={cancel}
+                />
+            </FloatingWindow>
+        );
+    }
 
     return (
         <FloatingWindow

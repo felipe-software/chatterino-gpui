@@ -1,6 +1,7 @@
 node_modules/
 .build/
 .local-gpui/
+native/target/
 
 npm-debug.*
 yarn-debug.*
@@ -18,4 +19,3 @@ yarn-error.*
 .claude/
 *.md
 !README.md
-!docs/DEVELOPMENT.md

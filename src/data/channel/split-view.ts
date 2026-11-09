@@ -1,4 +1,4 @@
-import type { ChatListMessage, ChatListMessagePatch } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage, ChatListMessagePatch } from "../../native/chatList";
 import type { Channel, ChannelEvent, ChannelInfo, Completion, EmoteInfo, ModerationAction, SendResult } from "../api";
 import { filterContext } from "../filters/lang/context";
 import { runFilter, type CompiledFilter } from "../filters/lang/filter";

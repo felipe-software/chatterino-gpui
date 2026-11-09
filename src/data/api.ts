@@ -1,6 +1,8 @@
-import type { ChatListMessage, ChatListMessagePatch } from "@felipe-software/react-native-gpui";
+import type { ChatListMessage, ChatListMessagePatch } from "../native/chatList";
 
 export type ThemeName = "white" | "light" | "dark" | "black";
+export type UiStyle = "chatterino" | "modern";
+export type AccentName = "sky" | "teal" | "indigo" | "pink" | "orange" | "lime";
 
 export type HighlightPhrase = {
     pattern: string;
@@ -76,6 +78,8 @@ export type BlockedUsersVisibility = "never" | "moderator" | "broadcaster";
 export type StreamlinkQuality = "choose" | "source" | "high" | "medium" | "low" | "audioOnly";
 
 export type ExtendedSettings = {
+    uiStyle: UiStyle;
+    accentColor: AccentName;
     systemTheme: boolean;
     darkSystemTheme: ThemeName;
     lightSystemTheme: ThemeName;

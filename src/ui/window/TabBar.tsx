@@ -11,6 +11,7 @@ import { isSpecialChannel } from "../state/specialChannels";
 import type { MenuEntry } from "../state/overlays";
 import { useStore } from "../state/useStore";
 import type { TabState } from "../theme";
+import { ModernTabBar, type TabBarHandlers, type TabBarTab } from "../modern/window/ModernTabBar";
 import { CornerButton } from "./CornerButton";
 import { NotebookTab } from "./NotebookTab";
 import { notebookEntries, tabEntries } from "./tabMenu";
@@ -86,15 +87,45 @@ export function TabBar({ layout }: { layout: WindowLayout }) {
         if (!tabsShown) hitAreas.clearTabs();
     }, [tabsShown]);
 
+    const openNotebookMenu = (pageX: number, pageY: number) => {
+        if (hitAreas.tabAt(pageX, pageY)) return;
+        services.openOverlay({ kind: "menu", x: pageX, y: pageY + 8, entries: notebookEntries(services, titles) });
+    };
+
+    if (theme.modern) {
+        const handlers: TabBarHandlers = {
+            select: (tabId) => actions.selectTab(tabId),
+            close: askClose,
+            rename: (tabId) => services.openOverlay({ kind: "renameTab", tabId }),
+            menu: (tab, x, y) => services.openOverlay({ kind: "menu", x, y: y + 8, entries: tabEntries(services, tab, titles) }),
+            reorder,
+            tabLayout: (tabId, rect) => hitAreas.setTab(tabId, rect),
+            add: () => actions.newTab(),
+            addLayout: (rect) => hitAreas.setAddTab(rect),
+            accounts: openAccounts,
+            settings: () => services.openOverlay({ kind: "settings" }),
+            barMenu: openNotebookMenu,
+        };
+        const modernTabs: TabBarTab[] = tabsShown
+            ? visibleTabs.map((tab) => ({ tab, id: tab.id, title: titles[tab.id], state: tabState(tab.id), live: isLive(tab.root) }))
+            : [];
+        return (
+            <ModernTabBar
+                layout={layout}
+                tabs={modernTabs}
+                tabsShown={tabsShown}
+                showLive={prefs.showTabLive}
+                closable={prefs.showTabCloseButton}
+                handlers={handlers}
+            />
+        );
+    }
+
     return (
         <View
             testID="tab-bar"
             style={{ backgroundColor: theme.window.background }}
-            onContextMenu={(event) => {
-                const { pageX, pageY } = event.nativeEvent;
-                if (hitAreas.tabAt(pageX, pageY)) return;
-                services.openOverlay({ kind: "menu", x: pageX, y: pageY + 8, entries: notebookEntries(services, titles) });
-            }}
+            onContextMenu={(event) => openNotebookMenu(event.nativeEvent.pageX, event.nativeEvent.pageY)}
         >
             <View style={{ flexDirection: "row", flexWrap: "wrap", paddingLeft: 2 }}>
                 <CornerButton
