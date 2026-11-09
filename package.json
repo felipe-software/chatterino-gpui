@@ -1,0 +1,28 @@
+{
+    "name": "chatterino-gpui",
+    "version": "0.0.0",
+    "private": true,
+    "description": "A Chatterino-style Twitch chat client built with react-native-gpui.",
+    "type": "module",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/felipe-software/chatterino-gpui.git"
+    },
+    "scripts": {
+        "start": "node scripts/run.mjs",
+        "start:dev": "node scripts/run.mjs --dev",
+        "bundle": "node scripts/run.mjs --bundle-only",
+        "test": "bun test src",
+        "typecheck": "tsc --noEmit -p ."
+    },
+    "dependencies": {
+        "@felipe-software/react-native-gpui": "^0.1.40",
+        "react": "19.2.6"
+    },
+    "devDependencies": {
+        "@types/bun": "1.4.2",
+        "@types/react": "~19.2.15",
+        "typescript": "~5.9.3"
+    }
+}

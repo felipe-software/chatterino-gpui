@@ -1,0 +1,16 @@
+node_modules/
+.build/
+.local-gpui/
+
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+.DS_Store
+*.pem
+
+.env*.local
+
+*.tsbuildinfo
+
+.argent
