@@ -16,6 +16,8 @@ import type {
 } from "./api";
 import { accountFromCredentials, credentialErrors, fetchTokenScopes, validateToken } from "./accounts";
 import { DEFAULT_PING_SOUND } from "./assets";
+import { createChatterinoBridge, type ChatterinoBridge } from "./chatterino/bridge";
+import { hostPlatform } from "./defaults";
 import { parseIvrBadges, type BadgeMap } from "./badges/twitch";
 import { ChatChannel } from "./channel/chat-channel";
 import { MentionsChannel } from "./channel/mentions-channel";
@@ -66,6 +68,7 @@ export type MessageMenuCommand = { trigger: string };
 export type ChatCoreExtras = {
     readonly streamerMode: Store<boolean>;
     readonly lastWhisperer: Store<string | undefined>;
+    readonly chatterino: ChatterinoBridge;
     reconnect(): void;
     ready(): Promise<void>;
     runModerationAction(channel: string, index: number, messageId: string): void;
@@ -703,6 +706,7 @@ export function createChatCore(options: ChatCoreOptions = {}): ChatCore & ChatCo
         streamerWatcher.stop();
         stopSchemeListener?.();
         registry.dispose();
+        chatterino.dispose();
         mentions.dispose();
         whispers.dispose();
     }
@@ -730,11 +734,19 @@ export function createChatCore(options: ChatCoreOptions = {}): ChatCore & ChatCo
         }
     }
 
+    const chatterino = createChatterinoBridge({
+        core: { settings, layout, accounts, addAccountWithCredentials },
+        files: platform.files,
+        platform: hostPlatform(),
+        timers,
+    });
+
     return {
         settings,
         layout,
         accounts,
         status,
+        chatterino,
         mentions,
         whispers,
         blockedUsers,

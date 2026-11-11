@@ -6,7 +6,15 @@ import { DialogFooter } from "../modern/controls/DialogFooter";
 import { useApp } from "../state/AppContext";
 import { chromeColors } from "../theme";
 
-type Props = { title: string; message: string; infoOnly?: boolean; onConfirm: () => void; onClose: () => void };
+type Props = {
+    title: string;
+    message: string;
+    infoOnly?: boolean;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    cancelLabel?: string;
+    onClose: () => void;
+};
 
 const MODERN_WIDTH = 400;
 const MODERN_PADDING = 20;
@@ -20,13 +28,17 @@ function modernHeight(message: string): number {
     return MODERN_PADDING * 2 + lines * MODERN_LINE_HEIGHT + MODERN_FOOTER_HEIGHT;
 }
 
-export function ConfirmDialog({ title, message, infoOnly, onConfirm, onClose }: Props) {
+export function ConfirmDialog({ title, message, infoOnly, onConfirm, onCancel, cancelLabel = "Cancel", onClose }: Props) {
     const { theme, fonts } = useApp();
     const colors = chromeColors(theme);
     const tokens = theme.modern;
     const confirm = () => {
         onClose();
         onConfirm();
+    };
+    const cancel = () => {
+        onClose();
+        onCancel?.();
     };
     if (tokens) {
         return (
@@ -35,7 +47,7 @@ export function ConfirmDialog({ title, message, infoOnly, onConfirm, onClose }: 
                     <Text style={{ color: tokens.text, fontFamily: fonts.uiFamily, fontSize: 14, lineHeight: MODERN_LINE_HEIGHT }}>{message}</Text>
                 </View>
                 <DialogFooter>
-                    {infoOnly ? null : <Button testID="confirm-cancel" label="Cancel" onPress={onClose} />}
+                    {infoOnly ? null : <Button testID="confirm-cancel" label={cancelLabel} onPress={cancel} />}
                     <Button testID="confirm-ok" label={infoOnly ? "OK" : "Yes"} variant="primary" onPress={confirm} />
                 </DialogFooter>
             </FloatingWindow>
@@ -46,7 +58,7 @@ export function ConfirmDialog({ title, message, infoOnly, onConfirm, onClose }: 
             <View style={{ flex: 1, padding: 16, justifyContent: "space-between" }}>
                 <Text style={{ color: colors.text, fontFamily: fonts.appFamily, fontSize: fonts.appSize }}>{message}</Text>
                 <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-                    {infoOnly ? null : <PushButton testID="confirm-cancel" label="Cancel" onPress={onClose} />}
+                    {infoOnly ? null : <PushButton testID="confirm-cancel" label={cancelLabel} onPress={cancel} />}
                     <PushButton testID="confirm-ok" label={infoOnly ? "OK" : "Yes"} primary onPress={confirm} />
                 </View>
             </View>

@@ -26,6 +26,8 @@ function renderOverlay(overlay: Overlay, close: () => void) {
                     message={overlay.message}
                     infoOnly={overlay.infoOnly}
                     onConfirm={overlay.onConfirm}
+                    onCancel={overlay.onCancel}
+                    cancelLabel={overlay.cancelLabel}
                     onClose={close}
                 />
             );

@@ -32,7 +32,13 @@ export const STORAGE_KEYS = {
     layout: "chatterino-gpui/v1/layout",
     accounts: "chatterino-gpui/v1/accounts",
     roomIds: "chatterino-gpui/v1/room-ids",
+    window: "chatterino-gpui/v1/window",
 } as const;
+
+export type WindowGeometry = { width: number; height: number; x?: number; y?: number; maximized?: boolean };
+
+export const DEFAULT_WINDOW: WindowGeometry = { width: 1280, height: 800 };
+const MIN_WINDOW_SIZE = 200;
 
 const ROOM_ID_LIMIT = 500;
 
@@ -254,6 +260,7 @@ const LISTS: Partial<Record<keyof Settings, (value: unknown) => unknown[]>> = {
 const POSITIVE_INTEGERS = new Set<keyof Settings>(["historyLimit", "messageLimit"]);
 
 function sanitizeField(key: keyof Settings, value: unknown, fallback: unknown): unknown {
+    if (key === "importFromChatterino") return isBool(value) ? value : undefined;
     if (value === undefined) return fallback;
     const list = LISTS[key];
     if (list) return Array.isArray(value) ? list(value) : fallback;
@@ -411,6 +418,25 @@ export function sanitizeAccounts(value: unknown): AccountsState {
     const state: AccountsState = { accounts };
     if (current) state.current = (value.current as string).toLowerCase();
     return state;
+}
+
+export function sanitizeWindowGeometry(value: unknown): WindowGeometry | undefined {
+    if (!isObject(value)) return undefined;
+    const { width, height, x, y } = value;
+    const sized = typeof width === "number" && typeof height === "number" && width >= MIN_WINDOW_SIZE && height >= MIN_WINDOW_SIZE;
+    if (!sized) return undefined;
+    const geometry: WindowGeometry = { width: Math.round(width as number), height: Math.round(height as number) };
+    const placed = typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y);
+    if (placed) {
+        geometry.x = Math.round(x as number);
+        geometry.y = Math.round(y as number);
+    }
+    if (value.maximized === true) geometry.maximized = true;
+    return geometry;
+}
+
+export function loadWindowGeometry(storage: StorageLike): WindowGeometry {
+    return sanitizeWindowGeometry(readJson(storage, STORAGE_KEYS.window)) ?? DEFAULT_WINDOW;
 }
 
 export function loadSettings(storage: StorageLike): Settings {

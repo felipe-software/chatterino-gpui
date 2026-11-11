@@ -15,6 +15,9 @@ import { modernTheme } from "./modern/modernTheme";
 import { closeOverlay, openOverlay, type Overlay, type OverlaySpec, type TooltipSpec } from "./state/overlays";
 import { createPrefsStore } from "./state/prefs";
 import { createUiStore } from "./state/store";
+import { useChatterinoImportPrompt } from "./state/useChatterinoImportPrompt";
+import { useChatterinoUiPrefs } from "./state/useChatterinoUiPrefs";
+import { persistWindowGeometry } from "./state/windowGeometry";
 import { useStore } from "./state/useStore";
 import { themeFor } from "./theme";
 import { MainWindow } from "./window/MainWindow";
@@ -102,6 +105,11 @@ export function App() {
     }, [settings.hotkeyOverrides]);
 
     useEffect(() => AppCommands.addListener((id) => runHotkey(id, latest.current)), []);
+
+    useChatterinoImportPrompt(core, open);
+    useChatterinoUiPrefs(core, prefsStore);
+
+    useEffect(() => persistWindowGeometry(), []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
