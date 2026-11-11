@@ -1,7 +1,9 @@
 use gpui::{Modifiers, MouseButton, Pixels, Point};
 use serde_json::{Map, Value, json};
 
-use super::model::ChatElement;
+use super::images;
+use super::layout::Part;
+use super::model::{ChatElement, ChatMessage, LinkPreview};
 use super::state::{HitTarget, ListState, ScrollSnapshot, TargetKind, element_for};
 use react_native_gpui::native_element::{ReactElement, emit_event};
 
@@ -28,6 +30,32 @@ fn text_of(value: &Option<gpui::SharedString>) -> Option<&str> {
     value.as_ref().map(|value| value.as_ref())
 }
 
+fn preview_fields(map: &mut Map<String, Value>, preview: &LinkPreview) {
+    insert_text(map, "url", Some(&preview.link));
+    insert_text(map, "name", Some(&preview.name));
+    insert_text(map, "preview", Some(preview.kind.label()));
+    let size = preview
+        .image
+        .as_ref()
+        .and_then(|image| images::ready_size(image));
+    if let Some((width, height)) = size {
+        map.insert("imageWidth".into(), json!(width));
+        map.insert("imageHeight".into(), json!(height));
+    }
+}
+
+fn fill_target(map: &mut Map<String, Value>, message: &ChatMessage, target: &HitTarget) {
+    if target.part == Part::Preview {
+        if let Some(preview) = message.preview.as_deref() {
+            preview_fields(map, preview);
+        }
+        return;
+    }
+    if let Some(element) = element_for(message, target.part, target.element) {
+        target_fields(map, element);
+    }
+}
+
 fn target_fields(map: &mut Map<String, Value>, element: &ChatElement) {
     match element {
         ChatElement::User(user) => {
@@ -50,11 +78,14 @@ fn target_fields(map: &mut Map<String, Value>, element: &ChatElement) {
 
 pub fn hover_payload(list: &ListState, target: &HitTarget) -> Option<Value> {
     let entry = list.entry(target.seq)?;
-    let element = element_for(&entry.message, target.part, target.element)?;
+    let is_preview = target.part == Part::Preview;
+    if !is_preview {
+        element_for(&entry.message, target.part, target.element)?;
+    }
     let mut map = Map::new();
     map.insert("target".into(), json!(target.kind.label()));
     map.insert("messageId".into(), json!(entry.message.id.as_ref()));
-    target_fields(&mut map, element);
+    fill_target(&mut map, &entry.message, target);
     map.insert("x".into(), json!(f32::from(target.bounds.origin.x)));
     map.insert("y".into(), json!(f32::from(target.bounds.origin.y)));
     map.insert("width".into(), json!(f32::from(target.bounds.size.width)));
@@ -103,10 +134,8 @@ pub fn press_payload(
     map.insert("ctrlKey".into(), json!(modifiers.control));
     map.insert("altKey".into(), json!(modifiers.alt));
     map.insert("metaKey".into(), json!(modifiers.platform));
-    if let Some(target) = target
-        && let Some(element) = element_for(&entry.message, target.part, target.element)
-    {
-        target_fields(&mut map, element);
+    if let Some(target) = target {
+        fill_target(&mut map, &entry.message, target);
         if matches!(target.kind, TargetKind::Link | TargetKind::User) {
             map.remove("tooltip");
         }

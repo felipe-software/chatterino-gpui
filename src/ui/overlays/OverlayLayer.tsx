@@ -4,6 +4,7 @@ import type { Overlay } from "../state/overlays";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { EmotePopup } from "./EmotePopup";
+import { MediaZoom } from "./MediaZoom";
 import { PopupMenu } from "./PopupMenu";
 import { QuickSwitcher } from "./QuickSwitcher";
 import { RenameTabDialog } from "./RenameTabDialog";
@@ -49,6 +50,8 @@ function renderOverlay(overlay: Overlay, close: () => void) {
             return <SplitPopupWindow popupId={overlay.id} channel={overlay.channel} onClose={close} />;
         case "quickSwitcher":
             return <QuickSwitcher onClose={close} />;
+        case "media":
+            return <MediaZoom request={overlay} onClose={close} />;
     }
 }
 

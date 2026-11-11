@@ -46,11 +46,24 @@ export type ChatListBadgeElement = {
 
 export type ChatListElement = ChatListTextElement | ChatListUserElement | ChatListEmoteElement | ChatListBadgeElement;
 
+export type ChatListPreviewKind = "image" | "video" | "youtube";
+
+export type ChatListPreview = {
+    kind: ChatListPreviewKind;
+    link: string;
+    image?: string;
+    video?: string;
+    badge: string;
+    name: string;
+    domain: string;
+};
+
 export type ChatListMessage = {
     id: string;
     timestamp?: string;
     elements: ChatListElement[];
     reply?: ChatListElement[];
+    preview?: ChatListPreview;
     background?: string;
     marker?: string;
     disabled?: boolean;
@@ -78,6 +91,9 @@ export type ChatListPressEvent = {
     link?: string;
     tooltip?: string;
     tooltipImage?: string;
+    preview?: ChatListPreviewKind;
+    imageWidth?: number;
+    imageHeight?: number;
 };
 
 export type ChatListHoverEvent = {
@@ -89,6 +105,7 @@ export type ChatListHoverEvent = {
     url?: string;
     login?: string;
     link?: string;
+    preview?: ChatListPreviewKind;
     x: number;
     y: number;
     width: number;
@@ -102,6 +119,8 @@ export type ChatListScrollState = {
     paused: boolean;
     unseen: number;
 };
+
+export type ChatListPreviewSize = "large" | "small" | "off";
 
 export type ChatListProps = ViewProps & {
     fontSize?: number;
@@ -120,6 +139,14 @@ export type ChatListProps = ViewProps & {
     animateEmotes?: boolean;
     maxMessages?: number;
     pauseOnHover?: boolean;
+    previewSize?: ChatListPreviewSize;
+    previewScale?: number;
+    animatePreviews?: boolean;
+    previewBackground?: string;
+    previewBorder?: string;
+    previewHoverBorder?: string;
+    previewStripe?: string;
+    previewStripeAlt?: string;
     onPress?: (event: { nativeEvent: ChatListPressEvent }) => void;
     onHover?: (event: { nativeEvent: ChatListHoverEvent | null }) => void;
     onScrollState?: (event: { nativeEvent: ChatListScrollState }) => void;

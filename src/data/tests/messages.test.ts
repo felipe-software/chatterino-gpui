@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { ChatListElement } from "../../native/chatList";
+import { defaultSettings } from "../defaults";
 import { buildNotice } from "../messages/notice";
+import { renderMessage } from "../messages/render";
 import { irc, testChannel, texts } from "./helpers";
 import { LINES, RECORDED } from "./fixtures/lines";
 
@@ -14,6 +16,34 @@ function render(line: string, options: Parameters<typeof testChannel>[1] = {}) {
 function kinds(elements: ChatListElement[]): string[] {
     return elements.map((element) => element.kind);
 }
+
+const LINK_LINE =
+    "@badge-info=;badges=;color=#FF0000;display-name=Ronni;emotes=;id=preview-1;mod=0;room-id=11148817;subscriber=0;tmi-sent-ts=1700000000000;turbo=0;user-id=1;user-type= :ronni!ronni@ronni.tmi.twitch.tv PRIVMSG #forsen :clip from earlier f.feridinha.com/8gxpl.mp4 and https://i.imgur.com/a.png";
+
+describe("link previews", () => {
+    test("attach the first media link of a message", () => {
+        const { rendered } = render(LINK_LINE);
+        expect(rendered.preview).toEqual({
+            kind: "video",
+            link: "http://f.feridinha.com/8gxpl.mp4",
+            video: "http://f.feridinha.com/8gxpl.mp4",
+            badge: "MP4",
+            name: "8gxpl.mp4",
+            domain: "f.feridinha.com",
+        });
+    });
+
+    test("follow the inline previews setting and streamer mode", () => {
+        const { message } = render(LINK_LINE);
+        const base = { theme: "dark" as const, timestampFormat: "h:mm", showBadges: true, showChannelName: false, hideModerated: false };
+        const settings = defaultSettings("linux");
+        expect(renderMessage(message, { ...base, settings }).preview?.kind).toBe("video");
+        expect(renderMessage(message, { ...base, settings: { ...settings, inlinePreviews: "off" } }).preview).toBeUndefined();
+        expect(renderMessage(message, { ...base, settings, streamerMode: true }).preview).toBeUndefined();
+        const shown = { ...settings, streamerModeHideLinkThumbnails: false };
+        expect(renderMessage(message, { ...base, settings: shown, streamerMode: true }).preview?.kind).toBe("video");
+    });
+});
 
 describe("PRIVMSG", () => {
     test("orders badges, username, twitch/bttv emotes, mention and link like Chatterino", () => {

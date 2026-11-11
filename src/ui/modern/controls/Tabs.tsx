@@ -10,16 +10,17 @@ type Props<T extends string> = {
     onChange: (value: T) => void;
     height?: number;
     inset?: number;
+    gap?: number;
     testID?: string;
 };
 
-export function Tabs<T extends string>({ tabs, value, onChange, height = 38, inset = 0, testID }: Props<T>) {
+export function Tabs<T extends string>({ tabs, value, onChange, height = 38, inset = 0, gap = 22, testID }: Props<T>) {
     const tokens = useModernTokens();
     return (
         <View
             testID={testID}
             accessibilityRole="tablist"
-            style={{ flexDirection: "row", gap: 22, paddingHorizontal: inset }}
+            style={{ flexDirection: "row", gap, paddingHorizontal: inset }}
         >
             <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: tokens.lineSubtle }} />
             {tabs.map((tab) => (

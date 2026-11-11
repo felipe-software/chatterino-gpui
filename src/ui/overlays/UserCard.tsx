@@ -21,7 +21,7 @@ type Props = { login: string; channel: string; x: number; y: number; onClose: ()
 const WIDTH = 418;
 const HEIGHT = 472;
 const MODERN_WIDTH = 400;
-const MODERN_HEIGHT = 700;
+const MODERN_HEIGHT = 560;
 const ID_COLOR = "#aaaaaa";
 const PINNED = "#a34532";
 

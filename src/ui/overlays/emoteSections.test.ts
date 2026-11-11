@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { EmoteInfo } from "../../data/api";
-import { layoutEmoteGrid, layoutTileGrid, visibleRows } from "./emoteGridLayout";
-import { compareEmoteNames, emoteSections, emoteSourceLabel, modernEmoteView, searchSections } from "./emoteSections";
+import { emoteFamilies } from "./emoteFamilies";
+import { layoutEmoteGrid, layoutTileGrid, stickyHeader, visibleRows } from "./emoteGridLayout";
+import { compareEmoteNames, emoteSections, emoteSourceLabel, familySections, modernEmoteView, searchSections } from "./emoteSections";
 import { normalizeChannelName, stepSelection, switcherItems } from "./switcherItems";
 
 function emote(name: string, provider: EmoteInfo["provider"], scope: EmoteInfo["scope"], width = 28): EmoteInfo {
@@ -97,18 +98,78 @@ describe("modern emote picker", () => {
         expect(emoteSourceLabel(emote("smile", "emoji", "global"))).toBe("Emoji");
     });
 
-    test("tiles fill eight columns and the note follows the last section", () => {
-        const many = Array.from({ length: 10 }, (_, index) => emote(`e${index}`, "bttv", "channel"));
-        const layout = layoutTileGrid([{ title: "BetterTTV · forsen", emotes: many }], 418, "FrankerFaceZ has no emotes in this channel.");
+    test("tiles fill 36px columns and the note follows the last section", () => {
+        const many = Array.from({ length: 13 }, (_, index) => emote(`e${index}`, "bttv", "channel"));
+        const layout = layoutTileGrid([{ title: "BetterTTV · forsen", emotes: many }], 420, "FrankerFaceZ has no emotes in this channel.");
         const [header, first, second, note] = layout.rows;
-        expect(layout.tile).toBe(48);
-        expect(header).toMatchObject({ kind: "header", y: 14, height: 16, count: 10 });
-        expect(first.kind === "tiles" && first.items.map((item) => item.x)).toEqual([10, 60, 110, 160, 210, 260, 310, 360]);
-        expect(second).toMatchObject({ kind: "tiles", y: 84 });
-        expect(second.kind === "tiles" && second.items.map((item) => item.index)).toEqual([8, 9]);
-        expect(note).toMatchObject({ kind: "note", y: 144, height: 16 });
-        expect(layout.height).toBe(172);
-        expect(layout.emotes).toHaveLength(10);
+        expect(layout.tile).toBeCloseTo(412 / 11);
+        expect(header).toMatchObject({ kind: "header", y: 0, height: 22, count: 13, open: true });
+        expect(first.kind === "tiles" && first.items.length).toBe(11);
+        expect(first.kind === "tiles" && first.items[0].x).toBe(4);
+        expect(second.kind === "tiles" && second.items.map((item) => item.index)).toEqual([11, 12]);
+        expect(note).toMatchObject({ kind: "note", height: 16 });
+        expect(layout.emotes).toHaveLength(13);
+    });
+
+    test("a closed section keeps only its header", () => {
+        const layout = layoutTileGrid(
+            [
+                { title: "peepo", emotes: [emote("peepoHappy", "7tv", "channel")] },
+                { title: "Other", emotes: [emote("YEP", "7tv", "channel")] },
+            ],
+            420,
+            undefined,
+            (title) => title !== "peepo",
+        );
+        expect(layout.rows.map((row) => row.kind)).toEqual(["header", "header", "tiles"]);
+        expect(layout.rows[0]).toMatchObject({ open: false });
+    });
+
+    test("the sticky header is the last one above the scroll position and is pushed up by the next", () => {
+        const tiles = Array.from({ length: 22 }, (_, index) => emote(`e${index}`, "7tv", "channel"));
+        const layout = layoutTileGrid(
+            [
+                { title: "a", emotes: tiles },
+                { title: "b", emotes: tiles },
+            ],
+            420,
+        );
+        expect(stickyHeader(layout, 0)).toBeUndefined();
+        expect(stickyHeader(layout, 30)).toMatchObject({ header: { title: "a" }, offset: 0 });
+        const second = layout.headers[1].y;
+        expect(stickyHeader(layout, second - 10)).toMatchObject({ header: { title: "a" }, offset: -12 });
+        expect(stickyHeader(layout, second + 1)).toMatchObject({ header: { title: "b" }, offset: 0 });
+    });
+});
+
+describe("emote families (group by name)", () => {
+    const names = ["peepoHappy", "peepoSad", "peepoClap", "pepeLaugh", "pepeD", "pepeJAM", "feelsbadman", "FeelsDankMan", "feelsgoodman", "monkaS", "monkaW", "monkaHmm", "gigaNod", "YEP", "NOPE"];
+
+    test("leading camelCase words group regardless of case, lowercase names join a known family", () => {
+        const families = emoteFamilies(names);
+        expect(families.get("peepoClap")).toBe("peepo");
+        expect(families.get("pepeD")).toBe("pepe");
+        expect(families.get("FeelsDankMan")).toBe("feels");
+        expect(families.get("feelsbadman")).toBe("feels");
+        expect(families.get("monkaHmm")).toBe("monka");
+    });
+
+    test("groups under three emotes fall back to Other", () => {
+        const families = emoteFamilies(names);
+        expect(families.get("gigaNod")).toBe("");
+        expect(families.get("YEP")).toBe("");
+    });
+
+    test("lowercase names sharing a 4+ letter start with two others form a group", () => {
+        const families = emoteFamilies(["blobdance", "blobwave", "blobnod", "duck"]);
+        expect(families.get("blobwave")).toBe("blob");
+        expect(families.get("duck")).toBe("");
+    });
+
+    test("sections sort by size and end with Other", () => {
+        const list = names.map((name) => emote(name, "7tv", "channel"));
+        const sections = familySections(list, emoteFamilies(names));
+        expect(sections.map((section) => `${section.title} ${section.emotes.length}`)).toEqual(["feels 3", "monka 3", "peepo 3", "pepe 3", "Other 3"]);
     });
 });
 

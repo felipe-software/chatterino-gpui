@@ -36,6 +36,10 @@ const HEIGHT = 32;
 const RADIUS = 6;
 const FILL = { position: "absolute", left: 0, top: 0, right: 0, bottom: 0 } as const;
 const TITLE_MAX_WIDTH = 220;
+const PADDING_X = 13;
+const CLOSE_SIZE = 20;
+const CLOSE_INSET = 3;
+const CLOSE_SHIFT = -9;
 const DOUBLE_CLICK_MS = 400;
 
 export function ModernTab(props: Props) {
@@ -53,6 +57,10 @@ export function ModernTab(props: Props) {
     const chipShadow = tokens.tabOnShadow !== "none" ? tokens.tabOnShadow : undefined;
     const chipOpacity = useMotion(selected ? 1 : 0);
     const showClose = closable && selected;
+    const shift = useMotion(showClose ? CLOSE_SHIFT : 0);
+    const [shiftBack] = useState(() => shift.interpolate({ inputRange: [CLOSE_SHIFT, 0], outputRange: [-CLOSE_SHIFT, 0] }));
+    const closeOpacity = useMotion(showClose ? 1 : 0);
+    const titleStyle = { fontFamily: fonts.uiFamily, fontSize: 13, lineHeight: 16 };
     const showCount = splitCount > 1;
     const showLiveDot = live && showLive && !layoutIcon;
     const showMentions = mentions > 0 && !selected;
@@ -105,34 +113,45 @@ export function ModernTab(props: Props) {
             <HoverLayer hovered={hovered && !selected} radius={RADIUS} color={tokens.tabHover} />
             <View
                 nativeListGroup={`tab-${id}`}
-                style={{
-                    height: HEIGHT,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: layoutIcon ? 7 : 6,
-                    paddingLeft: 10,
-                    paddingRight: showClose ? 4 : 10,
-                }}
+                style={{ height: HEIGHT, flexDirection: "row", alignItems: "center", paddingHorizontal: PADDING_X }}
                 onMouseDown={handleDown}
                 onMouseMove={handleMove}
                 onMouseUp={handleUp}
             >
+                <Animated.View style={{ flexDirection: "row", alignItems: "center", gap: layoutIcon ? 7 : 6, marginLeft: shift, marginRight: shiftBack }}>
                 {layoutIcon ? <Svg name={layoutIcon} style={{ width: 15, height: 15, color: iconColor }} /> : null}
                 {showLiveDot ? <LiveDot /> : null}
-                <View style={{ maxWidth: TITLE_MAX_WIDTH, overflow: "hidden" }}>
-                    <Text numberOfLines={1} style={{ color: textColor, fontFamily: fonts.uiFamily, fontSize: 13, lineHeight: 16, fontWeight: loud ? "600" : "500" }}>
+                <View style={{ maxWidth: TITLE_MAX_WIDTH, overflow: "hidden", justifyContent: "center" }}>
+                    <Text numberOfLines={1} style={{ ...titleStyle, color: "transparent", fontWeight: "600" }}>
                         {title}
                     </Text>
+                    <View style={{ ...FILL, justifyContent: "center" }}>
+                        <Text testID={`tab-title-${id}`} numberOfLines={1} style={{ ...titleStyle, color: textColor, fontWeight: loud ? "600" : "500" }}>
+                            {title}
+                        </Text>
+                    </View>
                 </View>
                 {showCount ? (
                     <Text style={{ color: tokens.text3, fontFamily: fonts.uiFamily, fontSize: 12, lineHeight: 16, fontWeight: "500" }}>{String(splitCount)}</Text>
                 ) : null}
                 {showMentions ? <CountBadge testID={`tab-mentions-${id}`} count={mentions} /> : null}
+                </Animated.View>
             </View>
-            {showClose ? (
-                <View style={{ marginRight: 4 }}>
-                    <IconButton testID={`tab-close-${id}`} icon={MODERN_ICONS.close} label="Close tab" size={24} iconSize={14} tone="muted" onPress={props.onClose} />
-                </View>
+            {closable ? (
+                <Animated.View
+                    pointerEvents={showClose ? "auto" : "none"}
+                    style={{ position: "absolute", right: CLOSE_INSET, top: (HEIGHT - CLOSE_SIZE) / 2, opacity: closeOpacity }}
+                >
+                    <IconButton
+                        testID={showClose ? `tab-close-${id}` : `tab-close-hidden-${id}`}
+                        icon={MODERN_ICONS.close}
+                        label="Close tab"
+                        size={CLOSE_SIZE}
+                        iconSize={13}
+                        tone="muted"
+                        onPress={props.onClose}
+                    />
+                </Animated.View>
             ) : null}
         </View>
     );

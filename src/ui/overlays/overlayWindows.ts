@@ -5,6 +5,7 @@ import type { Overlay } from "../state/overlays";
 export type OverlayWindow = {
     kind: WindowKind;
     closeOnEscape: boolean;
+    closeOnBlur?: boolean;
     anchor?: { x: number; y: number };
 };
 
@@ -20,6 +21,8 @@ export function overlayWindowFor(overlay: Overlay): OverlayWindow | null {
             return { kind: "popup", closeOnEscape: true, anchor: anchorOf(overlay.x, overlay.y) };
         case "thread":
             return { kind: "normal", closeOnEscape: true, anchor: anchorOf(overlay.x, overlay.y) };
+        case "media":
+            return { kind: "popup", closeOnEscape: true, closeOnBlur: true, anchor: anchorOf(overlay.x, overlay.y) };
         case "emotes":
         case "search":
             return { kind: "normal", closeOnEscape: true };

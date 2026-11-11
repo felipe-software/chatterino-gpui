@@ -31,23 +31,18 @@ export function UserCardHeader({ displayName, color, avatarUrl, idText, id, badg
     const small = { color: tokens.text2, fontFamily: fonts.uiFamily, fontSize: 12, lineHeight: 18 };
     const badgeTitle = badges.find((badge) => badge.tooltip)?.tooltip;
     const isLive = liveViewers !== undefined;
+    const detail = [badgeTitle, isLive ? `Live with ${localizeNumber(liveViewers ?? 0)} viewers` : undefined, idText].filter(Boolean).join(" · ");
     return (
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
-            <View
-                testID="user-card-avatar"
-                accessibilityRole="button"
-                accessibilityLabel="Open profile"
-                style={{ marginTop: 6, borderRadius: 30, cursor: "pointer" }}
-                onClick={onProfile}
-            >
-                <Avatar name={displayName} uri={avatarUrl} size={60} color={color} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View testID="user-card-avatar" accessibilityRole="button" accessibilityLabel="Open profile" style={{ borderRadius: 22, cursor: "pointer" }} onClick={onProfile}>
+                <Avatar name={displayName} uri={avatarUrl} size={44} color={color} />
             </View>
-            <View style={{ flex: 1, minWidth: 0, gap: 4, paddingTop: 8 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 2, minWidth: 0 }}>
                     <Text
                         testID="user-card-name"
                         numberOfLines={1}
-                        style={{ flexShrink: 1, color, fontFamily: fonts.uiFamily, fontSize: 18, lineHeight: 24, fontWeight: "600" }}
+                        style={{ flexShrink: 1, color, fontFamily: fonts.uiFamily, fontSize: 16, lineHeight: 22, fontWeight: "600" }}
                     >
                         {displayName}
                     </Text>
@@ -55,41 +50,25 @@ export function UserCardHeader({ displayName, color, avatarUrl, idText, id, badg
                         testID="user-card-copy-name"
                         icon={MODERN_ICONS.copy}
                         label="Copy name"
-                        size={26}
+                        size={24}
                         iconSize={14}
                         tone="muted"
                         onPress={() => NativeClipboard.setString(displayName)}
                     />
                 </View>
-                {badges.length > 0 ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <View style={{ flexDirection: "row", gap: 3 }}>
-                            {badges.map((badge) => (
-                                <Image
-                                    key={badge.name}
-                                    accessibilityLabel={badge.tooltip ?? badge.name}
-                                    source={{ uri: badge.url }}
-                                    style={{ width: BADGE_SIZE, height: BADGE_SIZE, borderRadius: 3 }}
-                                    resizeMode="contain"
-                                />
-                            ))}
-                        </View>
-                        {badgeTitle ? (
-                            <Text numberOfLines={1} style={{ ...small, flexShrink: 1 }}>
-                                {badgeTitle}
-                            </Text>
-                        ) : null}
-                    </View>
-                ) : null}
-                {isLive ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <LiveDot />
-                        <Text style={small}>{`Live with ${localizeNumber(liveViewers ?? 0)} viewers`}</Text>
-                    </View>
-                ) : null}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                    <Text numberOfLines={1} style={{ ...small, flexShrink: 1, color: tokens.text3 }}>
-                        {idText}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    {badges.slice(0, 3).map((badge) => (
+                        <Image
+                            key={badge.name}
+                            accessibilityLabel={badge.tooltip ?? badge.name}
+                            source={{ uri: badge.url }}
+                            style={{ width: BADGE_SIZE, height: BADGE_SIZE, borderRadius: 3 }}
+                            resizeMode="contain"
+                        />
+                    ))}
+                    {isLive ? <LiveDot /> : null}
+                    <Text testID="user-card-detail" numberOfLines={1} style={{ ...small, flexShrink: 1 }}>
+                        {detail}
                     </Text>
                     {id ? (
                         <IconButton
@@ -104,9 +83,9 @@ export function UserCardHeader({ displayName, color, avatarUrl, idText, id, badg
                     ) : null}
                 </View>
             </View>
-            <View style={{ flexDirection: "row", gap: 2 }}>
-                <IconButton testID="user-card-pin" icon={POPUP_ICONS.pin} label="Pin card" iconSize={16} selected={pinned} onPress={onPin} />
-                <IconButton testID="user-card-close" icon={MODERN_ICONS.close} label="Close" iconSize={16} onPress={onClose} />
+            <View style={{ alignSelf: "flex-start", flexDirection: "row" }}>
+                <IconButton testID="user-card-pin" icon={POPUP_ICONS.pin} label="Pin card" size={30} iconSize={16} selected={pinned} onPress={onPin} />
+                <IconButton testID="user-card-close" icon={MODERN_ICONS.close} label="Close" size={30} iconSize={16} onPress={onClose} />
             </View>
         </View>
     );

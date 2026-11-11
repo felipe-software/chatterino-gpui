@@ -86,13 +86,14 @@ pub enum TargetKind {
     Link,
     Emote,
     Badge,
+    Preview,
 }
 
 impl TargetKind {
     pub fn label(self) -> &'static str {
         match self {
             TargetKind::User => "user",
-            TargetKind::Link => "link",
+            TargetKind::Link | TargetKind::Preview => "link",
             TargetKind::Emote => "emote",
             TargetKind::Badge => "badge",
         }
@@ -883,6 +884,24 @@ impl ListState {
         let x = f32::from(point.x - viewport.origin.x);
         let y = f32::from(point.y);
         let row = self.row_at(y)?;
+        if let Some(card) = row.layout.preview.as_ref()
+            && card.contains(x, y - row.top)
+        {
+            return Some(HitTarget {
+                kind: TargetKind::Preview,
+                seq: row.seq,
+                part: Part::Preview,
+                element: 0,
+                item: usize::MAX,
+                bounds: Bounds::new(
+                    gpui::point(
+                        viewport.origin.x + gpui::px(card.x),
+                        gpui::px(row.top + card.y),
+                    ),
+                    gpui::size(gpui::px(card.width), gpui::px(card.height)),
+                ),
+            });
+        }
         let item_index = row.layout.item_at(x, y - row.top)?;
         let item = &row.layout.items[item_index];
         let entry = self.entry(row.seq)?;
@@ -965,7 +984,7 @@ pub fn element_for(message: &ChatMessage, part: Part, element: u16) -> Option<&C
     match part {
         Part::Body => message.elements.get(element as usize),
         Part::Reply => message.reply.as_deref()?.get(element as usize),
-        Part::Timestamp => None,
+        Part::Timestamp | Part::Preview => None,
     }
 }
 

@@ -34,7 +34,7 @@ export function OverlayWindowFrame({ window, testID, title, width, height, x, y,
     const { theme } = useApp();
     const colors = chromeColors(theme);
     const tokens = theme.modern;
-    const closesOnBlur = window.kind === "popup" ? Boolean(onBackdropPress) : false;
+    const closesOnBlur = window.closeOnBlur ?? (window.kind === "popup" && Boolean(onBackdropPress));
     const legacyHeight = frameless ? height : height - IN_WINDOW_TITLE_HEIGHT;
     const decorated = window.kind !== "popup";
     return (
@@ -49,31 +49,33 @@ export function OverlayWindowFrame({ window, testID, title, width, height, x, y,
             closeOnBlur={closesOnBlur}
             onClose={onClose}
         >
-            {tokens ? (
-                <DialogFrameContext.Provider value={{ decorated }}>
+            <>
+                {tokens ? (
+                    <DialogFrameContext.Provider value={{ decorated }}>
+                        <View
+                            testID={testID}
+                            style={{ flex: 1, backgroundColor: tokens.bgRaised, borderWidth: decorated ? 0 : 1, borderColor: tokens.lineStrong }}
+                        >
+                            <MenuHost>
+                                <DialogFrameHeader testID={testID} title={title} header={header} frameless={!!frameless} decorated={decorated} onClose={onClose} />
+                                <View style={{ flex: 1 }}>{children}</View>
+                            </MenuHost>
+                        </View>
+                    </DialogFrameContext.Provider>
+                ) : (
                     <View
                         testID={testID}
-                        style={{ flex: 1, backgroundColor: tokens.bgRaised, borderWidth: decorated ? 0 : 1, borderColor: tokens.lineStrong }}
+                        style={{
+                            flex: 1,
+                            backgroundColor: frameless ? theme.window.background : colors.background,
+                            borderWidth: frameless ? 1 : 0,
+                            borderColor: colors.outline,
+                        }}
                     >
-                        <MenuHost>
-                            <DialogFrameHeader testID={testID} title={title} header={header} frameless={!!frameless} decorated={decorated} onClose={onClose} />
-                            <View style={{ flex: 1 }}>{children}</View>
-                        </MenuHost>
+                        {children}
                     </View>
-                </DialogFrameContext.Provider>
-            ) : (
-                <View
-                    testID={testID}
-                    style={{
-                        flex: 1,
-                        backgroundColor: frameless ? theme.window.background : colors.background,
-                        borderWidth: frameless ? 1 : 0,
-                        borderColor: colors.outline,
-                    }}
-                >
-                    {children}
-                </View>
-            )}
+                )}
+            </>
         </Window>
     );
 }

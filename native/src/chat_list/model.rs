@@ -74,12 +74,53 @@ fn join_words(words: &[Word]) -> String {
     out
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PreviewKind {
+    Image,
+    Video,
+    YouTube,
+}
+
+impl PreviewKind {
+    pub fn plays(self) -> bool {
+        matches!(self, PreviewKind::Video | PreviewKind::YouTube)
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            PreviewKind::Image => "image",
+            PreviewKind::Video => "video",
+            PreviewKind::YouTube => "youtube",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinkPreview {
+    pub kind: PreviewKind,
+    pub link: SharedString,
+    pub image: Option<SharedString>,
+    pub video: Option<SharedString>,
+    pub badge: SharedString,
+    pub name: SharedString,
+    pub domain: SharedString,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PreviewSize {
+    #[default]
+    Off,
+    Small,
+    Large,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChatMessage {
     pub id: SharedString,
     pub timestamp: Option<SharedString>,
     pub elements: Arc<[ChatElement]>,
     pub reply: Option<Arc<[ChatElement]>>,
+    pub preview: Option<Arc<LinkPreview>>,
     pub background: Option<Hsla>,
     pub marker: Option<Hsla>,
     pub disabled: bool,
@@ -110,6 +151,7 @@ pub struct ChatMessagePatch {
     pub timestamp: Option<Option<SharedString>>,
     pub elements: Option<Arc<[ChatElement]>>,
     pub reply: Option<Option<Arc<[ChatElement]>>>,
+    pub preview: Option<Option<Arc<LinkPreview>>>,
     pub background: Option<Option<Hsla>>,
     pub marker: Option<Option<Hsla>>,
     pub disabled: Option<bool>,
@@ -127,6 +169,9 @@ impl ChatMessagePatch {
         }
         if let Some(reply) = &self.reply {
             message.reply = reply.clone();
+        }
+        if let Some(preview) = &self.preview {
+            message.preview = preview.clone();
         }
         if let Some(background) = self.background {
             message.background = background;
@@ -186,6 +231,14 @@ pub struct ChatListOptions {
     pub animate_emotes: bool,
     pub max_messages: usize,
     pub pause_on_hover: bool,
+    pub preview_size: PreviewSize,
+    pub preview_scale: f32,
+    pub animate_previews: bool,
+    pub preview_background: Option<Hsla>,
+    pub preview_border: Option<Hsla>,
+    pub preview_hover_border: Option<Hsla>,
+    pub preview_stripe: Option<Hsla>,
+    pub preview_stripe_alt: Option<Hsla>,
 }
 
 impl Default for ChatListOptions {
@@ -207,6 +260,14 @@ impl Default for ChatListOptions {
             animate_emotes: true,
             max_messages: DEFAULT_MAX_MESSAGES,
             pause_on_hover: false,
+            preview_size: PreviewSize::Off,
+            preview_scale: 1.0,
+            animate_previews: true,
+            preview_background: None,
+            preview_border: None,
+            preview_hover_border: None,
+            preview_stripe: None,
+            preview_stripe_alt: None,
         }
     }
 }
@@ -243,6 +304,20 @@ impl ChatListOptions {
             options.max_messages = (max as usize).clamp(1, MAX_MESSAGES_LIMIT);
         }
         options.pause_on_hover = boolean(obj, "pauseOnHover").unwrap_or(false);
+        options.preview_size = match string(obj, "previewSize").as_deref() {
+            Some("large") => PreviewSize::Large,
+            Some("small") => PreviewSize::Small,
+            _ => PreviewSize::Off,
+        };
+        if let Some(scale) = number(obj, "previewScale").filter(|scale| *scale > 0.0) {
+            options.preview_scale = scale.clamp(0.25, 4.0);
+        }
+        options.animate_previews = boolean(obj, "animatePreviews").unwrap_or(true);
+        options.preview_background = color(obj, "previewBackground");
+        options.preview_border = color(obj, "previewBorder");
+        options.preview_hover_border = color(obj, "previewHoverBorder");
+        options.preview_stripe = color(obj, "previewStripe");
+        options.preview_stripe_alt = color(obj, "previewStripeAlt");
         options
     }
 }
@@ -321,6 +396,7 @@ pub fn parse_message(value: &Value) -> Option<ChatMessage> {
         timestamp: shared(obj, "timestamp"),
         elements: parse_elements(obj.get("elements")),
         reply: parse_reply(obj.get("reply")),
+        preview: parse_preview(obj.get("preview")),
         background: color(obj, "background"),
         marker: color(obj, "marker"),
         disabled: boolean(obj, "disabled").unwrap_or(false),
@@ -342,12 +418,34 @@ fn parse_patch(value: &Value) -> Option<ChatMessagePatch> {
             .filter(|elements| elements.is_array())
             .map(|elements| parse_elements(Some(elements))),
         reply: obj.get("reply").map(|reply| parse_reply(Some(reply))),
+        preview: obj
+            .get("preview")
+            .map(|preview| parse_preview(Some(preview))),
         background: clearable_color("background"),
         marker: clearable_color("marker"),
         disabled: boolean(obj, "disabled"),
         historical: boolean(obj, "historical"),
         hidden: boolean(obj, "hidden"),
     })
+}
+
+fn parse_preview(value: Option<&Value>) -> Option<Arc<LinkPreview>> {
+    let obj = value?.as_object()?;
+    let kind = match obj.get("kind").and_then(Value::as_str)? {
+        "image" => PreviewKind::Image,
+        "video" => PreviewKind::Video,
+        "youtube" => PreviewKind::YouTube,
+        _ => return None,
+    };
+    Some(Arc::new(LinkPreview {
+        kind,
+        link: shared(obj, "link")?,
+        image: shared(obj, "image"),
+        video: shared(obj, "video"),
+        badge: shared(obj, "badge").unwrap_or_default(),
+        name: shared(obj, "name").unwrap_or_default(),
+        domain: shared(obj, "domain").unwrap_or_default(),
+    }))
 }
 
 fn parse_reply(value: Option<&Value>) -> Option<Arc<[ChatElement]>> {
@@ -530,6 +628,38 @@ mod tests {
     }
 
     #[test]
+    fn preview_parses_and_patches_clear_it() {
+        let mut message = parse_message(&json!({
+            "id": "m1",
+            "elements": [{ "kind": "text", "text": "clip f.feridinha.com/8gxpl.mp4" }],
+            "preview": {
+                "kind": "video",
+                "link": "http://f.feridinha.com/8gxpl.mp4",
+                "video": "http://f.feridinha.com/8gxpl.mp4",
+                "badge": "MP4",
+                "name": "8gxpl.mp4",
+                "domain": "f.feridinha.com"
+            }
+        }))
+        .unwrap();
+        let preview = message.preview.clone().expect("preview parses");
+        assert_eq!(preview.kind, PreviewKind::Video);
+        assert!(preview.kind.plays());
+        assert_eq!(preview.image, None);
+        assert!(parse_preview(Some(&json!({ "kind": "video" }))).is_none());
+        assert!(parse_preview(Some(&json!({ "kind": "audio", "link": "x" }))).is_none());
+
+        parse_patch(&json!({ "id": "m1", "disabled": true }))
+            .unwrap()
+            .apply(&mut message);
+        assert!(message.preview.is_some());
+        parse_patch(&json!({ "id": "m1", "preview": null }))
+            .unwrap()
+            .apply(&mut message);
+        assert!(message.preview.is_none());
+    }
+
+    #[test]
     fn options_fall_back_to_defaults() {
         let options = ChatListOptions::parse(Some(
             &json!({ "fontSize": 0, "maxMessages": 5, "emoteScale": 2 }),
@@ -538,5 +668,11 @@ mod tests {
         assert_eq!(options.max_messages, 5);
         assert_eq!(options.emote_scale, 2.0);
         assert!(options.animate_emotes);
+        assert_eq!(options.preview_size, PreviewSize::Off);
+        let large = ChatListOptions::parse(Some(
+            &json!({ "previewSize": "large", "previewScale": 1.5 }),
+        ));
+        assert_eq!(large.preview_size, PreviewSize::Large);
+        assert_eq!(large.preview_scale, 1.5);
     }
 }

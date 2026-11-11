@@ -140,6 +140,7 @@ const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
     chatSendProtocol: ["default", "irc", "helix"],
     showBlockedUsersMessages: ["never", "moderator", "broadcaster"],
     streamlinkQuality: ["choose", "source", "high", "medium", "low", "audioOnly"],
+    inlinePreviews: ["large", "small", "off"],
 };
 
 const RANGES: Partial<Record<keyof Settings, [number, number]>> = {

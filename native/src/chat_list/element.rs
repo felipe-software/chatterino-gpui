@@ -12,6 +12,7 @@ use super::events;
 use super::images;
 use super::layout::{ColorRole, GlyphsItem, ItemKind, LayoutStyle, Shaper};
 use super::model::ChatListOptions;
+use super::preview::{self, PreviewColors};
 use super::state::{
     self, Gesture, HitTarget, ListState, Row, SCROLLBAR_WIDTH, ScrollbarGeometry, SelPos, Selection,
 };
@@ -35,6 +36,7 @@ pub struct Palette {
     pub thumb: Hsla,
     pub thumb_active: Hsla,
     pub curve: Hsla,
+    pub preview: PreviewColors,
 }
 
 impl Palette {
@@ -50,11 +52,12 @@ impl Palette {
             l: (thumb.l + 0.04).min(1.0),
             ..thumb
         };
+        let muted = options
+            .muted_color
+            .unwrap_or_else(|| gpui::rgba(0x8c7f7fff).into());
         Self {
             text,
-            muted: options
-                .muted_color
-                .unwrap_or_else(|| gpui::rgba(0x8c7f7fff).into()),
+            muted,
             link: options
                 .link_color
                 .unwrap_or_else(|| gpui::rgba(0x4286f4ff).into()),
@@ -66,6 +69,7 @@ impl Palette {
             thumb,
             thumb_active,
             curve: gpui::rgba(0x888888ff).into(),
+            preview: PreviewColors::resolve(options, text, muted),
         }
     }
 
@@ -97,6 +101,7 @@ pub struct ChatPrepaint {
     thumb_dragging: bool,
     markers: Vec<(f32, Hsla)>,
     animate: bool,
+    animate_previews: bool,
     line_height: f32,
 }
 
@@ -127,6 +132,8 @@ fn layout_style(options: &ChatListOptions, window: &Window) -> LayoutStyle {
         font_size: options.font_size,
         emote_scale: options.emote_scale,
         show_timestamps: options.show_timestamps,
+        preview_size: options.preview_size,
+        preview_scale: options.preview_scale,
     }
 }
 
@@ -232,6 +239,7 @@ impl Element for ReactChatListElement {
         let pointer = window.mouse_position();
         let pointer_in_bounds = bounds.contains(&pointer);
         let animate = options.animate_emotes;
+        let animate_previews = options.animate_previews;
         let listens_press = self.element.listens(events::PRESS_EVENT);
         let listens_hover = self.element.listens(events::HOVER_EVENT);
         state::with_list(id, |list| {
@@ -284,6 +292,7 @@ impl Element for ReactChatListElement {
                 thumb_dragging,
                 markers,
                 animate,
+                animate_previews,
                 line_height,
             })
         })
@@ -541,6 +550,35 @@ fn paint_row(
                         palette.curve,
                         window,
                     );
+                }
+            }
+        }
+        if pass == Pass::Content
+            && let Some(card) = layout.preview.as_ref()
+        {
+            let card_top = row.top + card.y;
+            let visible = card_top < f32::from(bounds.bottom())
+                && card_top + card.height > f32::from(bounds.top());
+            if visible {
+                let hovered = prepaint.hovered.as_ref().is_some_and(|hovered| {
+                    hovered.seq == row.seq && hovered.kind == state::TargetKind::Preview
+                });
+                let painted = preview::paint_preview(
+                    card,
+                    point(origin_x, top),
+                    &palette.preview,
+                    hovered,
+                    prepaint.animate_previews,
+                    now,
+                    window,
+                    cx,
+                );
+                if painted.image {
+                    tally.images += 1;
+                }
+                if let Some(deadline) = painted.wake {
+                    tally.animated += 1;
+                    tally.wake_at(deadline);
                 }
             }
         }
