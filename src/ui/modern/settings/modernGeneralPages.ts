@@ -454,6 +454,10 @@ function advanced(): ModernGeneralPage {
                 ],
             },
             {
+                title: "Chatterino",
+                blocks: [rows(row("syncChatterinoSettings", "Sync settings with Chatterino", { hint: "Applies changes made in Chatterino. Nothing is written back" }))],
+            },
+            {
                 title: "Sound",
                 blocks: [
                     rows(

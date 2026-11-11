@@ -1,6 +1,6 @@
 import type { AccountsState, ExtendedSettings, Settings, SplitContainer, SplitLeaf, TabLayout, TimeoutButton, WindowLayout } from "./api";
 
-function hostPlatform(): string {
+export function hostPlatform(): string {
     return (globalThis as { process?: { platform?: string } }).process?.platform ?? "linux";
 }
 
@@ -23,8 +23,10 @@ export const DEFAULT_TIMEOUT_BUTTONS: TimeoutButton[] = [
 
 export function defaultExtendedSettings(): ExtendedSettings {
     return {
-        uiStyle: "chatterino",
+        uiStyle: "modern",
         accentColor: "sky",
+        importFromChatterino: undefined,
+        syncChatterinoSettings: false,
         systemTheme: false,
         darkSystemTheme: "dark",
         lightSystemTheme: "light",

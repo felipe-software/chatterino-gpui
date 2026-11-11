@@ -80,6 +80,8 @@ export type StreamlinkQuality = "choose" | "source" | "high" | "medium" | "low" 
 export type ExtendedSettings = {
     uiStyle: UiStyle;
     accentColor: AccentName;
+    importFromChatterino: boolean | undefined;
+    syncChatterinoSettings: boolean;
     systemTheme: boolean;
     darkSystemTheme: ThemeName;
     lightSystemTheme: ThemeName;

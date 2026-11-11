@@ -67,6 +67,7 @@ describe("storage", () => {
             layout: "chatterino-gpui/v1/layout",
             accounts: "chatterino-gpui/v1/accounts",
             roomIds: "chatterino-gpui/v1/room-ids",
+            window: "chatterino-gpui/v1/window",
         });
         const storage = memoryStorage();
         const store = createStore(loadSettings(storage), (value) => storage.setItem(STORAGE_KEYS.settings, JSON.stringify(value)));

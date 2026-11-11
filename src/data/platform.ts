@@ -1,3 +1,5 @@
+import type { ChatterinoFiles } from "./chatterino/bridge";
+
 export type SpawnResult = { ok: true } | { ok: false; reason: string };
 
 export type PlatformHooks = {
@@ -13,6 +15,7 @@ export type PlatformHooks = {
     isAppActive?: () => boolean;
     prefetchImages?: (urls: string[]) => void;
     preconnect?: (origins: string[]) => void;
+    files?: ChatterinoFiles;
 };
 
 type MaybeModule = Record<string, unknown>;
@@ -48,6 +51,8 @@ export function platformHooksFrom(gpui: MaybeModule | undefined): PlatformHooks 
     const writeClipboard = method(gpui.NativeClipboard, "setString");
     const prefetch = method(gpui.ImageCache, "prefetch");
     const preconnect = method(gpui.ImageCache, "preconnect");
+    const readText = method(gpui.Files, "readText");
+    const knownDirectories = method(gpui.Files, "knownDirectories");
     const hooks: PlatformHooks = {};
     const appState = gpui.AppState as { currentState?: string } | undefined;
     if (appState && "currentState" in appState) hooks.isAppActive = () => appState.currentState === "active";
@@ -68,6 +73,12 @@ export function platformHooksFrom(gpui: MaybeModule | undefined): PlatformHooks 
     if (spawn) hooks.spawn = spawn;
     if (prefetch) hooks.prefetchImages = (urls) => void prefetch(urls);
     if (preconnect) hooks.preconnect = (origins) => void preconnect(origins);
+    if (readText && knownDirectories) {
+        hooks.files = {
+            readText: (path) => readText(path) as Promise<string | null>,
+            knownDirectories: () => knownDirectories() as ReturnType<ChatterinoFiles["knownDirectories"]>,
+        };
+    }
     return hooks;
 }
 

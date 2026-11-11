@@ -531,6 +531,16 @@ function soundItems(): GeneralItem[] {
     ];
 }
 
+function chatterinoItems(): GeneralItem[] {
+    return [
+        title("Chatterino"),
+        check("syncChatterinoSettings", "Sync settings with Chatterino", {
+            tooltip:
+                "Apply settings changed in Chatterino to this app. Chatterino's settings file is checked every 15 seconds; changes made here are not written back to Chatterino.",
+        }),
+    ];
+}
+
 function advancedItems(): GeneralItem[] {
     const overlay = "overlay windows are not available in this app yet.";
     return [
@@ -832,6 +842,7 @@ export function generalItems(): GeneralItem[] {
         ...browserItems(),
         ...cacheItems(),
         ...soundItems(),
+        ...chatterinoItems(),
         ...advancedItems(),
     ];
 }

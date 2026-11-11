@@ -14,7 +14,7 @@ export type OverlaySpec =
     | { kind: "search"; splitId: string; channels: string[] }
     | { kind: "renameTab"; tabId: string }
     | { kind: "addAccount" }
-    | { kind: "confirm"; title: string; message: string; onConfirm: () => void; infoOnly?: boolean }
+    | { kind: "confirm"; title: string; message: string; onConfirm: () => void; infoOnly?: boolean; onCancel?: () => void; cancelLabel?: string }
     | { kind: "thread"; splitId: string; channel: string; rootId: string; x?: number; y?: number }
     | { kind: "splitPopup"; channel: string }
     | { kind: "quickSwitcher" };
