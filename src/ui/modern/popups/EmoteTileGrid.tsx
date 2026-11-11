@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View, type LayoutChangeEvent } from "@felipe-software/react-native-gpui";
 import type { EmoteInfo } from "../../../data/api";
-import { layoutTileGrid, TILE_GRID, visibleRows, type TileRow } from "../../overlays/emoteGridLayout";
+import { layoutTileGrid, stickyHeader, TILE_GRID, visibleRows, type TileRow } from "../../overlays/emoteGridLayout";
 import type { EmoteSection } from "../../overlays/emoteSections";
 import { useApp } from "../../state/AppContext";
 import { useModernTokens } from "../controls/useModernTokens";
@@ -14,19 +14,25 @@ type Props = {
     sections: EmoteSection[];
     note?: string;
     selectedKey?: string;
+    isOpen: (title: string) => boolean;
+    onToggle: (title: string) => void;
     onHover: (emote: EmoteInfo) => void;
     onPick: (emote: EmoteInfo, keepOpen: boolean) => void;
 };
 
 type ScrollEvent = { nativeEvent?: { contentOffset?: { y?: number } } };
 
-export function EmoteTileGrid({ testID, sections, note, selectedKey, onHover, onPick }: Props) {
+const SCROLLBAR_ALLOWANCE = 10;
+
+export function EmoteTileGrid({ testID, sections, note, selectedKey, isOpen, onToggle, onHover, onPick }: Props) {
     const { fonts } = useApp();
     const tokens = useModernTokens();
     const [size, setSize] = useState({ width: 0, height: 0 });
     const [scrollTop, setScrollTop] = useState(0);
-    const layout = useMemo(() => layoutTileGrid(sections, size.width, note), [sections, size.width, note]);
+    const layout = useMemo(() => layoutTileGrid(sections, size.width - SCROLLBAR_ALLOWANCE, note, isOpen), [sections, size.width, note, isOpen]);
+    const sticky = stickyHeader(layout, scrollTop);
     const rows = size.width > 0 ? visibleRows(layout, scrollTop, size.height) : [];
+    const headerWidth = Math.max(0, size.width - SCROLLBAR_ALLOWANCE);
 
     const handleLayout = (event: LayoutChangeEvent) => {
         const { width, height } = event.nativeEvent.layout;
@@ -38,11 +44,7 @@ export function EmoteTileGrid({ testID, sections, note, selectedKey, onHover, on
     const renderRow = (row: TileRow) => {
         const frame = { position: "absolute" as const, left: 0, top: row.y, width: size.width, height: row.height };
         if (row.kind === "header") {
-            return (
-                <View key={row.key} style={{ ...frame, paddingHorizontal: TILE_GRID.paddingX }}>
-                    <EmoteSectionHeader title={row.title} count={row.count} />
-                </View>
-            );
+            return <EmoteSectionHeader key={row.key} title={row.title} count={row.count} open={row.open} top={row.y} width={headerWidth} onToggle={() => onToggle(row.title)} />;
         }
         if (row.kind === "note") {
             return (
@@ -69,10 +71,21 @@ export function EmoteTileGrid({ testID, sections, note, selectedKey, onHover, on
     };
 
     return (
-        <View testID={testID} style={{ flex: 1 }} onLayout={handleLayout}>
+        <View testID={testID} style={{ flex: 1, backgroundColor: tokens.bgChat }} onLayout={handleLayout}>
             <ScrollView style={{ flex: 1 }} onScroll={handleScroll} contentContainerStyle={{ height: layout.height }}>
                 {rows.map(renderRow)}
             </ScrollView>
+            {sticky ? (
+                <EmoteSectionHeader
+                    title={sticky.header.title}
+                    count={sticky.header.count}
+                    open={sticky.header.open}
+                    top={sticky.offset}
+                    width={headerWidth}
+                    sticky
+                    onToggle={() => onToggle(sticky.header.title)}
+                />
+            ) : null}
         </View>
     );
 }

@@ -5,6 +5,8 @@ export type MenuEntry =
     | { kind: "separator" }
     | { kind: "submenu"; label: string; entries: MenuEntry[] };
 
+export type MediaZoomRequest = { image: string; imageWidth?: number; imageHeight?: number; x: number; y: number };
+
 export type OverlaySpec =
     | { kind: "menu"; x: number; y: number; entries: MenuEntry[]; alignRight?: boolean; minWidth?: number }
     | { kind: "settings"; page?: string }
@@ -17,6 +19,7 @@ export type OverlaySpec =
     | { kind: "confirm"; title: string; message: string; onConfirm: () => void; infoOnly?: boolean }
     | { kind: "thread"; splitId: string; channel: string; rootId: string; x?: number; y?: number }
     | { kind: "splitPopup"; channel: string }
+    | ({ kind: "media" } & MediaZoomRequest)
     | { kind: "quickSwitcher" };
 
 export type Overlay = OverlaySpec & { id: string };
@@ -33,7 +36,7 @@ export type TooltipSpec = {
     placement: "below" | "cursor";
 };
 
-const SINGLETONS = new Set<OverlaySpec["kind"]>(["settings", "menu", "selectChannel", "renameTab", "confirm", "addAccount", "quickSwitcher"]);
+const SINGLETONS = new Set<OverlaySpec["kind"]>(["settings", "menu", "selectChannel", "renameTab", "confirm", "addAccount", "quickSwitcher", "media"]);
 
 function replacesExisting(entry: Overlay, spec: OverlaySpec): boolean {
     if (SINGLETONS.has(spec.kind)) return entry.kind === spec.kind;

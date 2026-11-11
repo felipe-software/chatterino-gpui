@@ -97,7 +97,7 @@ export function UserCardBody(props: Props) {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={{ gap: 14, paddingTop: 12, paddingRight: 10, paddingBottom: 16, paddingLeft: 18 }}>
+            <View style={{ paddingTop: 10, paddingRight: 6, paddingBottom: 10, paddingLeft: 12 }}>
                 <UserCardHeader
                     displayName={displayName}
                     color={nameColor}
@@ -111,31 +111,35 @@ export function UserCardBody(props: Props) {
                     onClose={onClose}
                     onProfile={() => openUrl(`https://www.twitch.tv/${login}`)}
                 />
-                <View style={{ flexDirection: "row", gap: 8, paddingRight: 8 }}>
-                    <UserStat testID="user-card-followers" label="Followers" value={followers} />
-                    <UserStat testID="user-card-created" label="Joined Twitch" value={joined} />
-                    <UserStat testID="user-card-follows" label="Follows channel" value={follows} />
-                </View>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingRight: 8 }}>
-                    <Button testID="user-card-mention" label="Mention" icon={MODERN_ICONS.mentions} disabled={!hasInput} onPress={mention} />
-                    <Button testID="user-card-whisper" label="Whisper" icon={MODERN_ICONS.chat} disabled={!hasInput} onPress={whisper} />
+            </View>
+            <View style={{ flexDirection: "row", borderTopWidth: 1, borderBottomWidth: 1, borderColor: tokens.lineSubtle }}>
+                <UserStat testID="user-card-followers" label="Followers" value={followers} />
+                <UserStat testID="user-card-created" label="Account created" value={joined} divided />
+                <UserStat testID="user-card-follows" label="Following since" value={follows} divided />
+            </View>
+            <View style={{ gap: 8, paddingVertical: 10, paddingHorizontal: 12 }}>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                    <Button testID="user-card-mention" label="Mention" icon={MODERN_ICONS.mentions} size="sm" grow disabled={!hasInput} onPress={mention} />
+                    <Button testID="user-card-whisper" label="Whisper" icon={MODERN_ICONS.chat} size="sm" grow disabled={!hasInput} onPress={whisper} />
                     <Button
                         testID="user-card-usercard"
-                        label="Viewer card"
+                        label="Card"
                         icon={MODERN_ICONS.account}
+                        size="sm"
+                        grow
                         disabled={!isTwitchChannel}
                         onPress={() => openUrl(`https://www.twitch.tv/popout/${channel}/viewercard/${login}`)}
                     />
-                    <Button testID="user-card-profile" label="Profile" icon={MODERN_ICONS.externalLink} onPress={() => openUrl(`https://www.twitch.tv/${login}`)} />
+                    <Button testID="user-card-profile" label="Profile" icon={MODERN_ICONS.externalLink} size="sm" grow onPress={() => openUrl(`https://www.twitch.tv/${login}`)} />
                 </View>
-                <View style={{ flexDirection: "row", gap: 20, paddingRight: 8 }}>
+                {canModerate ? <TimeoutBar buttons={settings.timeoutButtons} onTimeout={timeout} onBan={ban} /> : null}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                     <UserCardToggle testID="user-card-block" label="Block" value={blocked} onChange={onBlock} />
                     <UserCardToggle testID="user-card-ignore-highlights" label="Ignore highlights" value={false} disabled={!loggedIn} onChange={() => undefined} />
                 </View>
             </View>
-            {canModerate ? <TimeoutBar buttons={settings.timeoutButtons} onTimeout={timeout} onBan={ban} /> : null}
             <RecentMessages
-                title={isTwitchChannel ? `Recent messages in #${channel}` : "Recent messages"}
+                title={isTwitchChannel ? `Messages in #${channel}` : "Messages"}
                 messages={messages}
                 subscribe={subscribe}
                 showList={!!source}

@@ -355,26 +355,19 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
 
     if (tokens && composer) {
         const overflowColor = tokens.mention;
-        const modernTextHeight = boxHeight - 2 - composer.textInset * 2;
+        const modernTextHeight = boxHeight - composer.border - composer.textInset * 2;
         const showCounter = prefs.showMessageLength && length > 0;
         return (
             <View
                 testID={`split-input-${splitId}`}
-                style={{
-                    paddingTop: composer.paddingTop,
-                    paddingHorizontal: composer.paddingHorizontal,
-                    paddingBottom: composer.paddingBottom,
-                    backgroundColor: tokens.bgChat,
-                    borderTopWidth: composer.dividerWidth,
-                    borderTopColor: tokens.lineSubtle,
-                }}
+                style={{ backgroundColor: tokens.bgChat }}
             >
                 {popupOpen ? (
                     <CompletionPopup
                         rows={popupRows}
                         selected={selectedRow}
-                        bottom={boxHeight + replySpace + composer.paddingBottom}
-                        left={composer.paddingHorizontal}
+                        bottom={boxHeight + replySpace}
+                        left={0}
                         theme={theme}
                         fonts={fonts}
                         onPick={acceptRow}
@@ -390,11 +383,10 @@ export const SplitInput = forwardRef<SplitInputHandle, Props>(function SplitInpu
                     style={{
                         height: boxHeight,
                         flexDirection: "row",
-                        gap: 4,
-                        paddingLeft: 12,
-                        paddingRight: 4,
-                        borderWidth: 1,
-                        borderRadius: 8,
+                        gap: 2,
+                        paddingLeft: 10,
+                        paddingRight: 3,
+                        borderTopWidth: composer.border,
                         borderColor: hasFocus ? tokens.accent : tokens.lineStrong,
                         backgroundColor: tokens.bgInput,
                         overflow: "hidden",

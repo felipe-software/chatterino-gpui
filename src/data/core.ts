@@ -47,6 +47,7 @@ import { expandCustomCommand } from "./twitch/custom-commands";
 import { Helix } from "./twitch/helix";
 import { themePalette } from "./theme";
 import { fetchPronouns, fetchUserInfo } from "./users";
+import { PreviewTitles } from "./links/previewTitles";
 import { requestJson, type FetchLike } from "./util/http";
 
 export type ChatCoreOptions = {
@@ -105,6 +106,8 @@ const RENDER_KEYS: Array<keyof Settings> = [
     "hideModerationActions",
     "hideDeletionActions",
     "streamerModeHideModActions",
+    "streamerModeHideLinkThumbnails",
+    "inlinePreviews",
     "hideSimilar",
     "highlightInlineWhispers",
     "enableFirstMessageHighlight",
@@ -144,6 +147,7 @@ export function createChatCore(options: ChatCoreOptions = {}): ChatCore & ChatCo
     const platform = options.platform ?? {};
     const connect = options.connect !== false;
     const globals = new GlobalResources(fetchFn, () => registry.emotesChanged());
+    const previewTitles = new PreviewTitles(fetchFn);
     let ignoreFilter: IgnoreFilter;
     let highlightChecker: HighlightChecker;
     let nicknameMatcher: NicknameMatcher = () => undefined;
@@ -744,6 +748,8 @@ export function createChatCore(options: ChatCoreOptions = {}): ChatCore & ChatCo
         leave: (name) => registry.leave(name),
         globalEmotes: () => globals.emoteInfos(settings.get(), settings.get().emojiSet),
         userInfo,
+        previewTitle: (link) => previewTitles.cached(link),
+        loadPreviewTitle: (link) => previewTitles.load(link),
         addAccount,
         addAccountWithCredentials,
         removeAccount,

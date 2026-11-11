@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { View, type TextInputHandle } from "@felipe-software/react-native-gpui";
 import type { EmoteInfo } from "../../data/api";
 import { emojiShortCodes } from "../../data/emotes/emoji";
 import { providerLabel } from "../input/completion";
 import { FloatingWindow } from "../common/FloatingWindow";
 import { TextField } from "../common/TextField";
-import { CONTROL_ICONS } from "../modern/controls/icons";
-import { TextField as ModernTextField } from "../modern/controls/TextField";
 import { EmotePicker } from "../modern/popups/EmotePicker";
+import { EmoteSearchBar } from "../modern/popups/EmoteSearchBar";
 import { useApp } from "../state/AppContext";
 import { inputRegistry } from "../state/inputs";
 import { popupKeys } from "../state/popupKeys";
 import { useChannel } from "../state/useChannel";
 import { NotebookTab } from "../window/NotebookTab";
 import { EmoteGrid } from "./EmoteGrid";
-import { EMOTE_TABS, emoteSections, modernEmoteView, searchSections, type EmoteTab } from "./emoteSections";
+import { emoteFamilies } from "./emoteFamilies";
+import { EMOTE_TABS, emoteSections, familySections, modernEmoteView, searchSections, type EmoteListView, type EmoteTab } from "./emoteSections";
+import { OverlayWindowContext } from "./overlayWindows";
 
 type Props = { splitId: string; channel: string; onClose: () => void };
 
@@ -25,9 +26,15 @@ const MODERN_WIDTH = 420;
 const MODERN_HEIGHT = 600;
 const SEARCH_KEY = "field:emote-search";
 const REFRESH_MS = 1000;
+const GROUPABLE: EmoteTab[] = ["Channel", "Global"];
+
+function namedOnly(view: EmoteListView): EmoteInfo[] {
+    return view.sections.flatMap((section) => section.emotes).filter((emote) => emote.provider !== "emoji");
+}
 
 export function EmotePopup({ splitId, channel, onClose }: Props) {
-    const { core, theme, fonts, hideTooltip } = useApp();
+    const { core, theme, fonts, settings, hideTooltip } = useApp();
+    const overlayWindow = useContext(OverlayWindowContext);
     const source = useChannel(core, channel);
     const [tab, setTab] = useState<EmoteTab>("Subs");
     const [query, setQuery] = useState("");
@@ -66,10 +73,18 @@ export function EmotePopup({ splitId, channel, onClose }: Props) {
     );
     const tooltipText = (emote: EmoteInfo) => (emote.provider === "emoji" ? `:${shortCodeOf(emote)}:\nEmoji` : `${emote.name}\n${providerLabel(emote)}`);
     const tokens = theme.modern;
-    const modernView = useMemo(
-        () => (tokens ? modernEmoteView(tab, sections, channel, searching, query) : undefined),
-        [tokens, tab, sections, channel, searching, query],
-    );
+    const canGroup = searching || GROUPABLE.includes(tab);
+    const grouped = settings.emoteGroupByName && canGroup;
+    const allFamilies = useMemo(() => emoteFamilies([...new Set(emotes.filter((emote) => emote.provider !== "emoji").map((emote) => emote.name))]), [emotes]);
+    const modernView = useMemo(() => {
+        if (!tokens) return undefined;
+        const view = modernEmoteView(tab, sections, channel, searching, query);
+        if (!grouped || view.empty) return view;
+        const named = namedOnly(view);
+        const families = searching ? allFamilies : emoteFamilies([...new Set(named.map((emote) => emote.name))]);
+        const emoji = view.sections.filter((section) => section.emotes.every((emote) => emote.provider === "emoji"));
+        return { ...view, sections: [...familySections(named, families), ...emoji] };
+    }, [tokens, tab, sections, channel, searching, query, grouped, allFamilies]);
 
     useEffect(
         () =>
@@ -99,17 +114,7 @@ export function EmotePopup({ splitId, channel, onClose }: Props) {
             insert(emote);
             if (!keepOpen) close();
         };
-        const header = (
-            <ModernTextField
-                ref={search}
-                testID="emote-search"
-                value={query}
-                placeholder="Search all emotes"
-                leadingIcon={CONTROL_ICONS.search}
-                autoFocus
-                onChange={(value) => setQuery(value.replace(/\s/g, ""))}
-            />
-        );
+        const showClose = !overlayWindow || overlayWindow.kind === "popup";
         return (
             <FloatingWindow
                 testID="emote-popup"
@@ -118,14 +123,18 @@ export function EmotePopup({ splitId, channel, onClose }: Props) {
                 height={MODERN_HEIGHT}
                 x={0}
                 y={0}
-                header={header}
+                frameless
                 onClose={close}
             >
+                <EmoteSearchBar ref={search} testID="emote-search" value={query} showClose={showClose} onChange={(value) => setQuery(value.replace(/\s/g, ""))} onClose={close} />
                 <EmotePicker
                     tab={tab}
                     searching={searching}
                     view={modernView}
-                    gridKey={searching ? "search" : tab}
+                    gridKey={`${searching ? "search" : tab}:${grouped ? "name" : "provider"}`}
+                    grouped={settings.emoteGroupByName}
+                    canGroup={canGroup}
+                    onGroup={(next) => core.settings.set((current) => ({ ...current, emoteGroupByName: next }))}
                     nameOf={(emote) => (emote.provider === "emoji" ? `:${shortCodeOf(emote)}:` : emote.name)}
                     onTab={setTab}
                     onPick={pick}

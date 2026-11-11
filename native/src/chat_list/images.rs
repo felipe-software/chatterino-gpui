@@ -251,6 +251,16 @@ pub fn loaded_count() -> (usize, usize, usize) {
     })
 }
 
+pub fn ready_size(url: &str) -> Option<(u32, u32)> {
+    IMAGES.with_borrow(|images| match images.get(url).map(|entry| &entry.slot) {
+        Some(Slot::Ready(image)) => {
+            let size = image.data.size(0);
+            Some((size.width.0.max(0) as u32, size.height.0.max(0) as u32))
+        }
+        _ => None,
+    })
+}
+
 pub fn state_label(url: &str) -> &'static str {
     IMAGES.with_borrow(|images| match images.get(url).map(|entry| &entry.slot) {
         Some(Slot::Ready(_)) => "ready",

@@ -22,6 +22,9 @@ import { useMessageRecolor } from "../modern/splits/useMessageRecolor";
 import { MoreMessagesButton } from "./MoreMessagesButton";
 import { PausedIndicator } from "./PausedIndicator";
 import { ZoomWheel } from "./ZoomWheel";
+import { titlePreviews } from "./previewTitles";
+import { mediaZoomFor } from "../overlays/mediaZoomLayout";
+import { useOpenMediaZoom } from "../overlays/useOpenMediaZoom";
 import { uiScaleOf, zoomedScale } from "../zoom";
 import {
     REPLY_LINK,
@@ -90,6 +93,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
     const showReplyButton = !!settings.showReplyButton && canReply;
     const hasModRights = useModRights(isSpecialChannel(channelName) ? undefined : source, accounts.current);
     const recolor = useMessageRecolor(theme.modern, settings);
+    const openZoom = useOpenMediaZoom();
 
     useImperativeHandle(ref, () => ({ scrollToBottom: () => list.current?.scrollToBottom() }), []);
 
@@ -98,12 +102,18 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
         if (!handle) return;
         handle.clear();
         if (!channel) return;
+        let active = true;
+        const applyTitle = (patch: ChatListMessagePatch) => {
+            if (active) handle.update([patch]);
+        };
         const decorate = (messages: ChatListMessage[]) => {
-            const recolored = recolor ? messages.map(recolor.message) : messages;
+            const titled = titlePreviews(messages, core, applyTitle);
+            const recolored = recolor ? titled.map(recolor.message) : titled;
             return showReplyButton ? recolored.map(withReplyButton) : recolored;
         };
         const decoratePatches = (patches: ChatListMessagePatch[]) => {
-            const recolored = recolor ? patches.map(recolor.patch) : patches;
+            const titled = titlePreviews(patches, core, applyTitle);
+            const recolored = recolor ? titled.map(recolor.patch) : titled;
             return showReplyButton
                 ? recolored.map((patch) => (patch.elements ? (withReplyButton(patch as ChatListMessage) as ChatListMessagePatch) : patch))
                 : recolored;
@@ -118,7 +128,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
             if (highlightTab) current.tabActivity.set((activity) => ({ ...activity, [tabId]: "highlighted" }));
             else current.tabActivity.set((activity) => (activity[tabId] ? activity : { ...activity, [tabId]: "newMessage" }));
         };
-        return channel.subscribe((event) => {
+        const unsubscribe = channel.subscribe((event) => {
             switch (event.type) {
                 case "append":
                     handle.append(decorate(event.messages));
@@ -135,7 +145,11 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
                     return;
             }
         });
-    }, [channel, tabId, showReplyButton, recolor]);
+        return () => {
+            active = false;
+            unsubscribe();
+        };
+    }, [channel, tabId, showReplyButton, recolor, core]);
 
     const findMessage = (id: string) => channel?.snapshot().find((message) => message.id === id);
 
@@ -256,6 +270,11 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView({ ch
                 const message = findMessage(event.messageId);
                 if (message && isReplyable(source, message)) startReply(message);
             }
+            return;
+        }
+        const zoom = mediaZoomFor(event);
+        if (zoom) {
+            openZoom(zoom);
             return;
         }
         const link = event.target === "link" ? event.url : undefined;

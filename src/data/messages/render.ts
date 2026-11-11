@@ -1,4 +1,4 @@
-import type { ChatListElement, ChatListMessage } from "../../native/chatList";
+import type { ChatListElement, ChatListMessage, ChatListPreview } from "../../native/chatList";
 import type { Settings, ThemeName } from "../api";
 import { emojiUrl } from "../emotes/emoji";
 import type { Emote } from "../emotes/types";
@@ -13,6 +13,7 @@ import {
 } from "../filters/highlights";
 import { badgeGroupVisible } from "./privmsg";
 import { channelLink } from "../links/internal";
+import { linkPreview } from "../links/preview";
 import { themePalette } from "../theme";
 import { blendColors, formatColor, normalizeColor, opaque, parseColor } from "../util/colors";
 import { formatTimestamp } from "../util/time";
@@ -218,6 +219,23 @@ function isHiddenModeration(message: ChatMessage, options: RenderOptions): boole
     return settings.hideModerationActions || hideForStreamer;
 }
 
+function showsPreviews(options: RenderOptions): boolean {
+    const settings = options.settings;
+    if (settings?.inlinePreviews === "off") return false;
+    const hiddenForStreamer = !!options.streamerMode && !!settings?.streamerModeHideLinkThumbnails;
+    return !hiddenForStreamer;
+}
+
+function messagePreview(message: ChatMessage, options: RenderOptions): ChatListPreview | undefined {
+    if (!showsPreviews(options)) return undefined;
+    for (const piece of message.pieces) {
+        if (piece.kind !== "text" || !piece.link) continue;
+        const preview = linkPreview(piece.link);
+        if (preview) return preview;
+    }
+    return undefined;
+}
+
 function isHidden(message: ChatMessage, options: RenderOptions): boolean {
     if (message.flags.disabled && options.hideModerated) return true;
     if (message.flags.similar && options.settings?.hideSimilar) return true;
@@ -239,6 +257,8 @@ export function renderMessage(message: ChatMessage, options: RenderOptions): Cha
     };
     const showReply = !options.settings?.hideReplyContext;
     if (showReply && message.reply && message.reply.length > 0) rendered.reply = renderPieces(message.reply, options);
+    const preview = messagePreview(message, options);
+    if (preview) rendered.preview = preview;
     const colors = flagColors(options.settings);
     const whisperColor = inlineWhisperColor(message, options.settings);
     const background = options.ignoreHighlights ? undefined : backgroundColor(message, options.theme, colors, whisperColor);

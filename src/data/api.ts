@@ -76,10 +76,12 @@ export type ChatSendProtocol = "default" | "irc" | "helix";
 export type TimeoutStackStyle = "stack" | "stackUntilTimeout" | "dontStack";
 export type BlockedUsersVisibility = "never" | "moderator" | "broadcaster";
 export type StreamlinkQuality = "choose" | "source" | "high" | "medium" | "low" | "audioOnly";
+export type InlinePreviewSize = "large" | "small" | "off";
 
 export type ExtendedSettings = {
     uiStyle: UiStyle;
     accentColor: AccentName;
+    emoteGroupByName: boolean;
     systemTheme: boolean;
     darkSystemTheme: ThemeName;
     lightSystemTheme: ThemeName;
@@ -143,6 +145,8 @@ export type ExtendedSettings = {
     streamerModeSuppressInlineWhispers: boolean;
     thumbnailSize: number;
     thumbnailSizeStream: number;
+    inlinePreviews: InlinePreviewSize;
+    animatePreviewGifs: boolean;
     betaUpdates: boolean;
     additionalExtensionIDs: string;
     cachePath: string;
@@ -491,6 +495,8 @@ export interface ChatCore {
     leave(name: string): void;
     globalEmotes(): EmoteInfo[];
     userInfo(login: string, channel?: string): Promise<UserInfo>;
+    previewTitle(link: string): string | undefined;
+    loadPreviewTitle(link: string): Promise<string | undefined>;
     addAccount(token: string): Promise<Account>;
     removeAccount(login: string): void;
     selectAccount(login?: string): void;

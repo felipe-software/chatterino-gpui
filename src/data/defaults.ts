@@ -25,6 +25,7 @@ export function defaultExtendedSettings(): ExtendedSettings {
     return {
         uiStyle: "chatterino",
         accentColor: "sky",
+        emoteGroupByName: true,
         systemTheme: false,
         darkSystemTheme: "dark",
         lightSystemTheme: "light",
@@ -88,6 +89,8 @@ export function defaultExtendedSettings(): ExtendedSettings {
         streamerModeSuppressInlineWhispers: true,
         thumbnailSize: 0,
         thumbnailSizeStream: 2,
+        inlinePreviews: "large",
+        animatePreviewGifs: true,
         betaUpdates: false,
         additionalExtensionIDs: "",
         cachePath: "",

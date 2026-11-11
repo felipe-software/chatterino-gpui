@@ -247,6 +247,8 @@ function chat(): ModernGeneralPage {
                 blocks: [
                     rows(
                         row("showLinkPreviews", "Load link info", { hint: "Page titles and video stats" }),
+                        row("inlinePreviews", "Inline previews", { hint: "Image and video links show under the message", segment: true }),
+                        row("animatePreviewGifs", "Animate GIF previews"),
                         row("thumbnailSize", "Link thumbnails", { hint: "Shown in the link tooltip" }),
                         row("thumbnailSizeStream", "Stream thumbnails"),
                         row("linksDoubleClickOnly", "Open links with a double-click"),

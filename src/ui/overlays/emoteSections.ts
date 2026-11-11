@@ -156,3 +156,20 @@ export function emoteSourceLabel(emote: EmoteInfo): string {
     if (emote.provider === "emoji") return "Emoji";
     return `${PROVIDER_NAMES[emote.provider]} · ${emote.scope} emote`;
 }
+
+export function familySections(emotes: EmoteInfo[], families: Map<string, string>): EmoteSection[] {
+    const groups = new Map<string, EmoteInfo[]>();
+    for (const emote of emotes) {
+        const key = families.get(emote.name) ?? "";
+        const list = groups.get(key);
+        if (list) list.push(emote);
+        else groups.set(key, [emote]);
+    }
+    const named = [...groups.entries()]
+        .filter(([key]) => key)
+        .sort(([keyA, a], [keyB, b]) => b.length - a.length || keyA.localeCompare(keyB))
+        .map(([key, list]) => ({ title: key, emotes: sorted(list) }));
+    const rest = groups.get("");
+    if (rest) named.push({ title: named.length > 0 ? "Other" : "All emotes", emotes: sorted(rest) });
+    return named;
+}

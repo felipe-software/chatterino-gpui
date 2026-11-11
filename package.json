@@ -21,7 +21,7 @@
         "typecheck": "tsc --noEmit -p ."
     },
     "dependencies": {
-        "@felipe-software/react-native-gpui": "^0.1.40",
+        "@felipe-software/react-native-gpui": "^1.0.3",
         "react": "19.2.6"
     },
     "devDependencies": {

@@ -10,9 +10,23 @@ import type { UiPrefs } from "../state/prefs";
 import { uiScaleOf } from "../zoom";
 import { authorOf, canReplyTo } from "./replyTarget";
 import type { Theme } from "../theme";
+import type { ModernTokens } from "../modern/tokens";
 
 const OVERLAY_OPACITY = 0.4;
 const MODERN_HISTORY_OPACITY = 0.6;
+
+function previewProps(tokens: ModernTokens, settings: Settings): Partial<ChatListProps> {
+    return {
+        previewSize: settings.inlinePreviews,
+        previewScale: uiScaleOf(settings),
+        animatePreviews: settings.animatePreviewGifs,
+        previewBackground: tokens.bgRaised,
+        previewBorder: tokens.lineSubtle,
+        previewHoverBorder: tokens.lineHover,
+        previewStripe: tokens.stripeA,
+        previewStripeAlt: tokens.stripeB,
+    };
+}
 
 export function chatListProps(theme: Theme, fonts: Fonts, settings: Settings, prefs: UiPrefs): Partial<ChatListProps> {
     const historyOpacity = theme.modern ? MODERN_HISTORY_OPACITY : OVERLAY_OPACITY;
@@ -34,6 +48,7 @@ export function chatListProps(theme: Theme, fonts: Fonts, settings: Settings, pr
     };
     if (settings.showMessageSeparators) props.separatorColor = theme.messages.separator;
     if (settings.alternateMessageBackground) props.alternateBackground = theme.messages.alternate;
+    if (theme.modern) Object.assign(props, previewProps(theme.modern, settings));
     return props;
 }
 

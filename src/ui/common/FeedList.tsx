@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ChatList, type ChatListHandle, type ChatListHoverEvent, type ChatListMessage, type ChatListPressEvent } from "../../native/chatList";
+import { mediaZoomFor } from "../overlays/mediaZoomLayout";
+import { useOpenMediaZoom } from "../overlays/useOpenMediaZoom";
 import { chatListProps } from "../splits/chatHelpers";
 import { useApp } from "../state/AppContext";
 
@@ -16,6 +18,7 @@ type Props = {
 export function FeedList({ testID, messages, subscribe, showTimestamps, background, onPress, onHover }: Props) {
     const { theme, fonts, settings, prefs } = useApp();
     const list = useRef<ChatListHandle>(null);
+    const openZoom = useOpenMediaZoom();
 
     useEffect(() => {
         const handle = list.current;
@@ -28,6 +31,11 @@ export function FeedList({ testID, messages, subscribe, showTimestamps, backgrou
     }, [messages, subscribe]);
 
     const props = chatListProps(theme, fonts, settings, prefs);
+    const handlePress = (event: ChatListPressEvent) => {
+        const zoom = mediaZoomFor(event);
+        if (zoom) openZoom(zoom);
+        else onPress?.(event);
+    };
     return (
         <ChatList
             ref={list}
@@ -35,7 +43,7 @@ export function FeedList({ testID, messages, subscribe, showTimestamps, backgrou
             style={{ flex: 1, backgroundColor: background ?? theme.messages.background }}
             {...props}
             showTimestamps={showTimestamps ?? props.showTimestamps}
-            onPress={onPress ? ({ nativeEvent }) => onPress(nativeEvent) : undefined}
+            onPress={({ nativeEvent }) => handlePress(nativeEvent)}
             onHover={onHover ? ({ nativeEvent }) => onHover(nativeEvent) : undefined}
         />
     );

@@ -10,14 +10,14 @@ export function UserCardToggle({ label, value, disabled = false, testID, onChang
     const tokens = useModernTokens();
     const toggle = disabled ? undefined : () => onChange(!value);
     return (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
             <Switch testID={testID} label={label} size="sm" value={value} disabled={disabled} onChange={onChange} />
             <Text
                 style={{
                     color: disabled ? tokens.text3 : tokens.text2,
                     fontFamily: fonts.uiFamily,
-                    fontSize: 13,
-                    lineHeight: 18,
+                    fontSize: 12,
+                    lineHeight: 16,
                     cursor: disabled ? "default" : "pointer",
                 }}
                 onPress={toggle}

@@ -84,23 +84,19 @@ export function visibleRows<Row extends { y: number; height: number }>(layout: {
 
 export type TileItem = { emote: EmoteInfo; index: number; x: number };
 
-export type TileRow =
-    | { kind: "header"; key: string; y: number; height: number; title: string; count: number }
-    | { kind: "tiles"; key: string; y: number; height: number; items: TileItem[] }
-    | { kind: "note"; key: string; y: number; height: number; text: string };
+export type TileHeader = { kind: "header"; key: string; y: number; height: number; title: string; count: number; open: boolean };
 
-export type TileLayout = { rows: TileRow[]; height: number; tile: number; emotes: EmoteInfo[] };
+export type TileRow = TileHeader | { kind: "tiles"; key: string; y: number; height: number; items: TileItem[] } | { kind: "note"; key: string; y: number; height: number; text: string };
+
+export type TileLayout = { rows: TileRow[]; headers: TileHeader[]; height: number; tile: number; emotes: EmoteInfo[] };
 
 export const TILE_GRID = {
-    columns: 8,
-    gap: 2,
-    paddingTop: 6,
-    paddingX: 10,
-    paddingBottom: 12,
-    sectionTop: 8,
-    headerLine: 16,
-    headerGap: 4,
-    noteTop: 12,
+    minTile: 36,
+    paddingX: 4,
+    paddingBottom: 6,
+    headerLine: 22,
+    sectionGap: 2,
+    noteTop: 10,
     noteLine: 16,
     noteCharWidth: 6.2,
 };
@@ -110,28 +106,38 @@ function noteHeight(text: string, inner: number): number {
     return Math.ceil(text.length / perLine) * TILE_GRID.noteLine;
 }
 
-export function layoutTileGrid(sections: Array<{ title: string; emotes: EmoteInfo[] }>, width: number, note?: string): TileLayout {
-    const { columns, gap, paddingX } = TILE_GRID;
-    const inner = Math.max(0, width - paddingX * 2);
-    const tile = Math.max(1, Math.floor((inner - gap * (columns - 1)) / columns));
+export function layoutTileGrid(
+    sections: Array<{ title: string; emotes: EmoteInfo[] }>,
+    width: number,
+    note?: string,
+    isOpen: (title: string) => boolean = () => true,
+): TileLayout {
+    const { paddingX, minTile } = TILE_GRID;
+    const inner = Math.max(minTile, width - paddingX * 2);
+    const columns = Math.max(1, Math.floor(inner / minTile));
+    const tile = inner / columns;
     const rows: TileRow[] = [];
+    const headers: TileHeader[] = [];
     const emotes: EmoteInfo[] = [];
-    let y = TILE_GRID.paddingTop;
+    let y = 0;
     sections.forEach((entry, sectionIndex) => {
         if (entry.emotes.length === 0) return;
-        y += TILE_GRID.sectionTop;
-        rows.push({ kind: "header", key: `header-${sectionIndex}`, y, height: TILE_GRID.headerLine, title: entry.title, count: entry.emotes.length });
-        y += TILE_GRID.headerLine + TILE_GRID.headerGap;
+        const open = isOpen(entry.title);
+        const header: TileHeader = { kind: "header", key: `header-${sectionIndex}`, y, height: TILE_GRID.headerLine, title: entry.title, count: entry.emotes.length, open };
+        rows.push(header);
+        headers.push(header);
+        y += TILE_GRID.headerLine;
+        if (!open) return;
         for (let start = 0; start < entry.emotes.length; start += columns) {
             const slice = entry.emotes.slice(start, start + columns);
             const items = slice.map((emote, column) => {
                 emotes.push(emote);
-                return { emote, index: emotes.length - 1, x: paddingX + column * (tile + gap) };
+                return { emote, index: emotes.length - 1, x: paddingX + column * tile };
             });
             rows.push({ kind: "tiles", key: `tiles-${sectionIndex}-${start}`, y, height: tile, items });
-            const isLastLine = start + columns >= entry.emotes.length;
-            y += isLastLine ? tile : tile + gap;
+            y += tile;
         }
+        y += TILE_GRID.sectionGap;
     });
     if (note) {
         y += TILE_GRID.noteTop;
@@ -139,5 +145,21 @@ export function layoutTileGrid(sections: Array<{ title: string; emotes: EmoteInf
         rows.push({ kind: "note", key: "note", y, height, text: note });
         y += height;
     }
-    return { rows, height: y + TILE_GRID.paddingBottom, tile, emotes };
+    return { rows, headers, height: y + TILE_GRID.paddingBottom, tile, emotes };
+}
+
+export function stickyHeader(layout: TileLayout, top: number): { header: TileHeader; offset: number } | undefined {
+    if (top <= 0) return undefined;
+    let current: TileHeader | undefined;
+    let next: TileHeader | undefined;
+    for (const header of layout.headers) {
+        if (header.y <= top) current = header;
+        else {
+            next = header;
+            break;
+        }
+    }
+    if (!current) return undefined;
+    const offset = next ? Math.min(0, next.y - top - TILE_GRID.headerLine) : 0;
+    return { header: current, offset };
 }

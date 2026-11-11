@@ -1,9 +1,11 @@
 mod debug;
 mod element;
 mod events;
+mod frames;
 mod images;
 mod layout;
 mod model;
+mod preview;
 mod state;
 
 use std::collections::HashSet;

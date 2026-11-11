@@ -405,6 +405,16 @@ function streamerItems(): GeneralItem[] {
     ];
 }
 
+const inlinePreviewSizes = options([
+    ["large", "Large"],
+    ["small", "Small"],
+    ["off", "Off"],
+]);
+
+function usesModernStyle(access: SettingsAccess): boolean {
+    return access.settings.uiStyle === "modern";
+}
+
 function linkPreviewItems(): GeneralItem[] {
     const resolver = "link previews need Chatterino's link resolver, which this app does not query.";
     const sizes: Array<[number, string]> = [
@@ -432,6 +442,8 @@ function linkPreviewItems(): GeneralItem[] {
         ),
         check("showLinkPreviews", "Enable", { unsupported: resolver }),
         numberChoice("thumbnailSize", "Also show thumbnails if available", sizes, { unsupported: resolver }),
+        choice("inlinePreviews", "Show image and video links under the message (Modern style)", inlinePreviewSizes, { enabled: usesModernStyle }),
+        check("animatePreviewGifs", "Animate GIF previews (Modern style)", { enabled: (access) => usesModernStyle(access) && access.settings.inlinePreviews !== "off" }),
         numberChoice("thumbnailSizeStream", "Show thumbnails of streams", streamSizes),
     ];
 }

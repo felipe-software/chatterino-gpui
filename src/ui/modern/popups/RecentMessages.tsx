@@ -9,7 +9,7 @@ import { useRecoloredFeed, type FeedSubscribe } from "./useRecoloredFeed";
 
 type Props = { title: string; messages: ChatListMessage[]; subscribe?: FeedSubscribe; showList: boolean };
 
-const LIST_INSET = 10;
+const LIST_INSET = 2;
 
 export function RecentMessages({ title, messages, subscribe, showList }: Props) {
     const { fonts } = useApp();
@@ -29,11 +29,11 @@ export function RecentMessages({ title, messages, subscribe, showList }: Props) 
     const label = { fontFamily: fonts.uiFamily, fontSize: 12, lineHeight: 16 };
     return (
         <View style={{ flex: 1, minHeight: 0, borderTopWidth: 1, borderTopColor: tokens.lineSubtle, backgroundColor: tokens.bgChat }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 12, paddingBottom: 6, paddingHorizontal: 18 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 8, paddingBottom: 4, paddingHorizontal: 12 }}>
                 <Text numberOfLines={1} style={{ ...label, flexShrink: 1, color: tokens.text2, fontWeight: "600" }}>
                     {title}
                 </Text>
-                <Text style={{ ...label, color: tokens.text3 }}>{String(count)}</Text>
+                <Text testID="user-card-session-count" style={{ ...label, color: tokens.text3 }}>{count === 1 ? "1 this session" : `${count} this session`}</Text>
             </View>
             <View style={{ flex: 1, minHeight: 0, paddingLeft: LIST_INSET }}>
                 {showList ? <FeedList testID="user-card-messages" messages={feed.messages} subscribe={feed.subscribe} /> : null}

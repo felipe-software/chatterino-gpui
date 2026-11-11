@@ -6,7 +6,9 @@ use gpui::{
     WindowTextSystem, px,
 };
 
-use super::model::{ChatElement, ChatMessage, ImageElement, Word, split_words};
+use super::model::{
+    ChatElement, ChatMessage, ImageElement, LinkPreview, PreviewSize, Word, split_words,
+};
 
 pub const MARGIN_LEFT: f32 = 8.0;
 pub const MARGIN_RIGHT: f32 = 8.0;
@@ -16,6 +18,27 @@ pub const COMPACT_EMOTE_OFFSET: f32 = 4.0;
 pub const REPLY_FONT_SCALE: f32 = 0.8;
 pub const REPLY_CURVE_WIDTH: f32 = 18.0;
 const ELLIPSIS: &str = "…";
+const PREVIEW_LARGE_WIDTH: f32 = 300.0;
+const PREVIEW_SMALL_WIDTH: f32 = 180.0;
+const PREVIEW_MIN_WIDTH: f32 = 96.0;
+const PREVIEW_GAP_TOP: f32 = 6.0;
+const PREVIEW_GAP_BOTTOM: f32 = 2.0;
+const PREVIEW_RADIUS: f32 = 8.0;
+const PREVIEW_BORDER: f32 = 1.0;
+const PREVIEW_FOOTER_PAD_X: f32 = 10.0;
+const PREVIEW_FOOTER_PAD_Y: f32 = 6.0;
+const PREVIEW_FOOTER_LINE: f32 = 16.0;
+const PREVIEW_FOOTER_FONT: f32 = 12.0;
+const PREVIEW_FOOTER_GAP: f32 = 6.0;
+const PREVIEW_DOMAIN_MIN: f32 = 24.0;
+const PREVIEW_BADGE_INSET: f32 = 8.0;
+const PREVIEW_BADGE_PAD_X: f32 = 6.0;
+const PREVIEW_BADGE_HEIGHT: f32 = 18.0;
+const PREVIEW_BADGE_FONT: f32 = 11.0;
+const PREVIEW_BADGE_RADIUS: f32 = 4.0;
+const PREVIEW_PLAY_LARGE: f32 = 48.0;
+const PREVIEW_PLAY_SMALL: f32 = 34.0;
+const PREVIEW_SEPARATOR: &str = "·";
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LayoutStyle {
@@ -23,6 +46,8 @@ pub struct LayoutStyle {
     pub font_size: f32,
     pub emote_scale: f32,
     pub show_timestamps: bool,
+    pub preview_size: PreviewSize,
+    pub preview_scale: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -47,6 +72,7 @@ pub enum Part {
     Reply,
     Timestamp,
     Body,
+    Preview,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -157,6 +183,53 @@ pub struct Line {
     pub items: Range<usize>,
 }
 
+pub struct PreviewText {
+    pub layout: Arc<LineLayout>,
+    pub x: f32,
+    pub baseline: f32,
+    pub muted: bool,
+}
+
+pub struct PreviewBadge {
+    pub layout: Arc<LineLayout>,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub baseline: f32,
+    pub radius: f32,
+}
+
+pub struct PreviewBox {
+    pub preview: Arc<LinkPreview>,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub border: f32,
+    pub radius: f32,
+    pub media_height: f32,
+    pub scale: f32,
+    pub play: f32,
+    pub badge: Option<PreviewBadge>,
+    pub footer: Vec<PreviewText>,
+}
+
+impl PreviewBox {
+    pub fn contains(&self, x: f32, y: f32) -> bool {
+        x >= self.x && x < self.x + self.width && y >= self.y && y < self.y + self.height
+    }
+
+    pub fn media(&self) -> (f32, f32, f32, f32) {
+        (
+            self.x + self.border,
+            self.y + self.border,
+            self.width - self.border * 2.0,
+            self.media_height,
+        )
+    }
+}
+
 pub struct MessageLayout {
     pub key: LayoutKey,
     pub height: f32,
@@ -165,6 +238,7 @@ pub struct MessageLayout {
     pub sel_units: u32,
     pub body_start: u32,
     pub has_layers: bool,
+    pub preview: Option<PreviewBox>,
 }
 
 impl MessageLayout {
@@ -496,6 +570,7 @@ pub fn layout_message(
             sel_units: 0,
             body_start: 0,
             has_layers: false,
+            preview: None,
         };
     }
     let left = MARGIN_LEFT;
@@ -535,11 +610,18 @@ pub fn layout_message(
     }
 
     let (items, lines, bottom, sel_units) = flow.finish();
-    let content_bottom = if lines.is_empty() {
+    let mut content_bottom = if lines.is_empty() {
         MARGIN_TOP + base_metrics.text_height()
     } else {
         bottom
     };
+    let preview = message
+        .preview
+        .as_ref()
+        .and_then(|preview| layout_preview(preview, left, right, content_bottom, shaper));
+    if let Some(card) = preview.as_ref() {
+        content_bottom = card.y + card.height + PREVIEW_GAP_BOTTOM * card.scale;
+    }
     let body_start = body_start_after_author(message, body_start, sel_units);
     let has_layers = items.iter().any(|item| item.layer);
     MessageLayout {
@@ -550,7 +632,179 @@ pub fn layout_message(
         sel_units,
         body_start,
         has_layers,
+        preview,
     }
+}
+
+fn layout_preview(
+    preview: &Arc<LinkPreview>,
+    left: f32,
+    right: f32,
+    content_bottom: f32,
+    shaper: &Shaper,
+) -> Option<PreviewBox> {
+    let style = shaper.style;
+    let scale = style.preview_scale;
+    let (design_width, design_play) = match style.preview_size {
+        PreviewSize::Off => return None,
+        PreviewSize::Small => (PREVIEW_SMALL_WIDTH, PREVIEW_PLAY_SMALL),
+        PreviewSize::Large => (PREVIEW_LARGE_WIDTH, PREVIEW_PLAY_LARGE),
+    };
+    let available = right - left;
+    if available < PREVIEW_MIN_WIDTH * scale {
+        return None;
+    }
+    let width = (design_width * scale).min(available).round();
+    let border = PREVIEW_BORDER;
+    let inner = width - border * 2.0;
+    let media_height = (inner * 9.0 / 16.0).round();
+    let footer_height = ((PREVIEW_FOOTER_PAD_Y * 2.0 + PREVIEW_FOOTER_LINE) * scale).round();
+    let x = left;
+    let y = (content_bottom + PREVIEW_GAP_TOP * scale).round();
+    let footer_top = y + border + media_height;
+    let footer = layout_preview_footer(preview, x + border, footer_top, inner, scale, shaper);
+    let badge = layout_preview_badge(&preview.badge, x + border, y + border, scale, shaper);
+    let play = if preview.kind.plays() {
+        (design_play * scale).min(media_height * 0.8).round()
+    } else {
+        0.0
+    };
+    Some(PreviewBox {
+        preview: preview.clone(),
+        x,
+        y,
+        width,
+        height: border * 2.0 + media_height + footer_height,
+        border,
+        radius: PREVIEW_RADIUS * scale,
+        media_height,
+        scale,
+        play,
+        badge,
+        footer,
+    })
+}
+
+fn weighted_font(shaper: &Shaper, weight: FontWeight) -> Font {
+    let mut font = shaper.font(false, false);
+    font.weight = weight;
+    font
+}
+
+fn fit_text(
+    shaper: &Shaper,
+    text: &str,
+    font: &Font,
+    size: f32,
+    max_width: f32,
+) -> Option<Arc<LineLayout>> {
+    if text.is_empty() || max_width <= 0.0 {
+        return None;
+    }
+    let layout = shaper.shape(text, font, size);
+    if f32::from(layout.width) <= max_width + 0.5 {
+        return Some(layout);
+    }
+    let ellipsis = shaper.shape(ELLIPSIS, font, size);
+    let split = split_index(text, &layout, max_width - f32::from(ellipsis.width));
+    if split == 0 {
+        return None;
+    }
+    let mut kept = text[..split].trim_end().to_string();
+    kept.push_str(ELLIPSIS);
+    Some(shaper.shape(&kept, font, size))
+}
+
+fn layout_preview_footer(
+    preview: &LinkPreview,
+    left: f32,
+    top: f32,
+    inner_width: f32,
+    scale: f32,
+    shaper: &Shaper,
+) -> Vec<PreviewText> {
+    let size = PREVIEW_FOOTER_FONT * scale;
+    let name_font = weighted_font(shaper, FontWeight::MEDIUM);
+    let meta_font = shaper.font(false, false);
+    let metrics = shaper.metrics(&meta_font, size);
+    let line_top = top + PREVIEW_FOOTER_PAD_Y * scale;
+    let baseline =
+        (line_top + (PREVIEW_FOOTER_LINE * scale - metrics.text_height()) / 2.0 + metrics.ascent)
+            .round();
+    let start = left + PREVIEW_FOOTER_PAD_X * scale;
+    let available = inner_width - PREVIEW_FOOTER_PAD_X * scale * 2.0;
+    let gap = PREVIEW_FOOTER_GAP * scale;
+    let name = shaper.shape(&preview.name, &name_font, size);
+    let separator = shaper.shape(PREVIEW_SEPARATOR, &meta_font, size);
+    let name_width = f32::from(name.width);
+    let domain_room = available - name_width - gap * 2.0 - f32::from(separator.width);
+    let shows_domain = !preview.domain.is_empty() && domain_room >= PREVIEW_DOMAIN_MIN * scale;
+    let mut texts = Vec::new();
+    if !shows_domain {
+        if let Some(layout) = fit_text(shaper, &preview.name, &name_font, size, available) {
+            texts.push(PreviewText {
+                layout,
+                x: start,
+                baseline,
+                muted: false,
+            });
+        }
+        return texts;
+    }
+    let separator_x = start + name_width + gap;
+    let domain_x = separator_x + f32::from(separator.width) + gap;
+    let domain = fit_text(shaper, &preview.domain, &meta_font, size, domain_room);
+    texts.push(PreviewText {
+        layout: name,
+        x: start,
+        baseline,
+        muted: false,
+    });
+    texts.push(PreviewText {
+        layout: separator,
+        x: separator_x,
+        baseline,
+        muted: true,
+    });
+    if let Some(layout) = domain {
+        texts.push(PreviewText {
+            layout,
+            x: domain_x,
+            baseline,
+            muted: true,
+        });
+    }
+    texts
+}
+
+fn layout_preview_badge(
+    badge: &str,
+    media_x: f32,
+    media_y: f32,
+    scale: f32,
+    shaper: &Shaper,
+) -> Option<PreviewBadge> {
+    if badge.is_empty() {
+        return None;
+    }
+    let size = PREVIEW_BADGE_FONT * scale;
+    let font = weighted_font(shaper, FontWeight::SEMIBOLD);
+    let metrics = shaper.metrics(&font, size);
+    let layout = shaper.shape(badge, &font, size);
+    let height = (PREVIEW_BADGE_HEIGHT * scale).round();
+    let x = media_x + (PREVIEW_BADGE_INSET * scale).round();
+    let y = media_y + (PREVIEW_BADGE_INSET * scale).round();
+    let width = (f32::from(layout.width) + PREVIEW_BADGE_PAD_X * scale * 2.0).round();
+    let baseline = (y + (height - metrics.text_height()) / 2.0 + metrics.ascent).round();
+    Some(PreviewBadge {
+        layout,
+        x,
+        y,
+        width,
+        height,
+        baseline,
+        radius: PREVIEW_BADGE_RADIUS * scale,
+    })
 }
 
 fn body_start_after_author(message: &ChatMessage, body_units_start: u32, total: u32) -> u32 {

@@ -2,6 +2,7 @@ use gpui::{MouseButton, point, px};
 use serde_json::{Map, Value, json};
 
 use super::events;
+use super::frames;
 use super::images;
 use super::layout::{ItemKind, Part};
 use super::model::ChatElement;
@@ -38,6 +39,7 @@ fn item_type(element: Option<&ChatElement>, part: Part, kind: &ItemKind) -> &'st
 
 pub fn summary(list: &ListState) -> Value {
     let (ready, loading, failed) = images::loaded_count();
+    let (frames_ready, frames_running, frames_failed) = frames::counts();
     let selection = list.copy_text();
     json!({
         "messages": list.entries.len(),
@@ -78,6 +80,7 @@ pub fn summary(list: &ListState) -> Value {
             "total": list.scrollbar.total,
         },
         "images": { "ready": ready, "loading": loading, "failed": failed },
+        "videoFrames": { "ready": frames_ready, "running": frames_running, "failed": frames_failed },
         "animationWakes": images::wakes_scheduled(),
     })
 }
@@ -127,6 +130,28 @@ pub fn dump(list_id: u64) -> Option<(Value, Vec<Value>)> {
                 node.insert(
                     "bounds".into(),
                     bounds_json(origin_x + item.x, row.top + item.y, item.width, item.height),
+                );
+                items.push(Value::Object(node));
+            }
+            if let Some(card) = row.layout.preview.as_ref() {
+                let preview = &card.preview;
+                let mut node = Map::new();
+                node.insert(
+                    "globalId".into(),
+                    json!(synthetic_id(list_id, row.seq, ITEM_SLOTS as usize - 1)),
+                );
+                node.insert("type".into(), json!("chatlist-preview"));
+                node.insert("text".into(), json!(preview.name.as_ref()));
+                node.insert(
+                    "accessibility".into(),
+                    json!({ "label": preview.kind.label(), "nativeID": preview.link.as_ref() }),
+                );
+                if let Some(src) = preview.image.as_ref().or(preview.video.as_ref()) {
+                    node.insert("src".into(), json!(src.as_ref()));
+                }
+                node.insert(
+                    "bounds".into(),
+                    bounds_json(origin_x + card.x, row.top + card.y, card.width, card.height),
                 );
                 items.push(Value::Object(node));
             }
